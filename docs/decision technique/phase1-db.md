@@ -29,8 +29,3 @@ Registre des choix de conception pris pendant la Phase 1 (Supabase CLI). Objecti
 - **Project-ref cloud** non committé : il vit dans `supabase/.temp/` (gitignoré). Chaque développeur effectue son propre `supabase link --project-ref <project-ref>`.
 - **Workflow** : développement **local d'abord** (`supabase start` / `supabase db reset`), `supabase db push` **différé** (choix de l'utilisateur).
 - **`supabase/seed.sql`** : placeholder créé (le seed est activé dans `config.toml`).
-
-## État
-
-- Phase 1 **terminée en local** : schéma appliqué et validé (insertion, trigger `updated_at`, contrainte self-mariage testés).
-- Reste à faire (quand souhaité) : `npx supabase db push` pour synchroniser le projet cloud.

@@ -23,10 +23,10 @@
   - [x] **P2.3.3** `ROLE_ADMIN` : Accès complet (CRUD) sans restriction.
 
 ## Phase 3 : Initialisation du Projet Frontend (TanStack)
-- [ ] **P3.1** Initialiser le projet web avec la stack **TanStack** (TanStack Router et TanStack Query).
-- [ ] **P3.2** Configurer le client Supabase dans l'application.
-- [ ] **P3.3** Générer les types TypeScript depuis le schéma avec `supabase gen types typescript`.
-- [ ] **P3.4** Mettre en place le layout global, la protection des routes et la gestion des sessions utilisateur.
+- [x] **P3.1** Initialiser le projet web avec la stack **TanStack** (TanStack Router et TanStack Query).
+- [x] **P3.2** Configurer le client Supabase dans l'application.
+- [x] **P3.3** Générer les types TypeScript depuis le schéma avec `supabase gen types typescript`.
+- [x] **P3.4** Mettre en place le layout global, la protection des routes et la gestion des sessions utilisateur.
 
 ## Phase 4 : Intégration du Stockage des Photos (imgbb API)
 - [ ] **P4.1** Créer un service utilitaire pour communiquer avec l'API **imgbb** (`https://api.imgbb.com/`).
