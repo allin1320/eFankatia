@@ -15,12 +15,12 @@
 - [x] **P1.12** Créer les **triggers d'audit** (`updated_at` via `moddatetime`, `user_created`/`user_edited` via `auth.uid()`).
 
 ## Phase 2 : Authentification, Rôles et Sécurité (Supabase Auth & RLS)
-- [ ] **P2.1** Configurer l'authentification Supabase.
-- [ ] **P2.2** Mettre en place la gestion des rôles dans `profiles.role` (`ROLE_ADMIN`, `ROLE_MODERATEUR`, `ROLE_USER`) et la lignée assignée `profiles.personne_id`.
-- [ ] **P2.3** Appliquer les politiques **Row Level Security (RLS)** sur les tables :
-  - [ ] **P2.3.1** `ROLE_USER` : Accès en lecture seule.
-  - [ ] **P2.3.2** `ROLE_MODERATEUR` : Droits d'écriture restreints à sa propre lignée assignée.
-  - [ ] **P2.3.3** `ROLE_ADMIN` : Accès complet (CRUD) sans restriction.
+- [x] **P2.1** Configurer l'authentification Supabase.
+- [x] **P2.2** Mettre en place la gestion des rôles dans `profiles.role` (`ROLE_ADMIN`, `ROLE_MODERATEUR`, `ROLE_USER`) et la lignée assignée `profiles.personne_id`.
+- [x] **P2.3** Appliquer les politiques **Row Level Security (RLS)** sur les tables :
+  - [x] **P2.3.1** `ROLE_USER` : Accès en lecture seule.
+  - [x] **P2.3.2** `ROLE_MODERATEUR` : Droits d'écriture restreints à sa propre lignée assignée.
+  - [x] **P2.3.3** `ROLE_ADMIN` : Accès complet (CRUD) sans restriction.
 
 ## Phase 3 : Initialisation du Projet Frontend (TanStack)
 - [ ] **P3.1** Initialiser le projet web avec la stack **TanStack** (TanStack Router et TanStack Query).
