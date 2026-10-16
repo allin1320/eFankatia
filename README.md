@@ -5,7 +5,8 @@ Application web d'**arbre généalogique familial** : retracer l'histoire de la 
 ## Stack
 
 - **Frontend / routage / état** : [TanStack Start](https://tanstack.com/start) (React 19, Vite 8) + [TanStack Router](https://tanstack.com/router) (file-based) + [TanStack Query](https://tanstack.com/query)
-- **Base de données** : [Supabase](https://supabase.com/) (PostgreSQL, Auth, RLS), gérée via la **Supabase CLI**
+- **Base de données & auth** : [Supabase](https://supabase.com/) (PostgreSQL, Auth, RLS) — clients `@supabase/supabase-js` + `@supabase/ssr` (session en cookies httpOnly), gérée via la **Supabase CLI**
+- **Formulaires** : [TanStack Form](https://tanstack.com/form) + [Zod](https://zod.dev/)
 - **Styles** : [Tailwind CSS v4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (style `new-york`, base `zinc`)
 - **Médias** : API [imgbb](https://api.imgbb.com/) pour les photos de profil
 
@@ -33,8 +34,12 @@ npx supabase start
 #    (demande le mot de passe DB du projet)
 npx supabase link --project-ref <project-ref>
 
-# 6. Appliquer les migrations en local
+# 6. Appliquer les migrations + seed en local (crée les comptes de démo)
 npx supabase db reset
+
+# 7. Configurer l'environnement (voir section « Authentification & environnement »)
+cp .env.example .env
+#    puis renseigner VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY via `npx supabase status`
 ```
 
 > **`<project-ref>`** est propre à chaque projet/équipe : il se lit dans l'URL du dashboard
@@ -83,12 +88,50 @@ npx supabase migration list        # cohérence local vs cloud
 ### Générer les types TypeScript
 
 ```bash
+# depuis la base locale (recommandé — pas besoin de `supabase link`)
+npx supabase gen types typescript --local > src/lib/supabase/database.types.ts
+
+# ou depuis le projet cloud lié
 npx supabase gen types typescript --linked > src/lib/supabase/database.types.ts
 ```
+
+## Authentification & environnement
+
+L'auth repose sur **Supabase Auth** + **`@supabase/ssr`** : la session est stockée dans des cookies httpOnly et lue côté serveur (`src/lib/auth/session.ts`), puis injectée dans le contexte du routeur et exposée via `useAuth()` (`src/lib/auth/auth-context.tsx`).
+
+### Variables d'environnement
+
+| Variable | Description | Où la trouver |
+|---|---|---|
+| `VITE_SUPABASE_URL` | URL de l'API Supabase | `npx supabase status` → **`Project URL`** (local), ou dashboard → *Project Settings → API → Project URL* (cloud) |
+| `VITE_SUPABASE_ANON_KEY` | Clé publique | `npx supabase status` → **`Publishable`** (anciennement `anon`) (local), ou dashboard → *Project Settings → API → publishable/anon* (cloud) |
+
+```bash
+cp .env.example .env   # puis renseigner les 2 variables
+```
+
+> Les **mêmes** variables sont utilisées côté client (`import.meta.env`) et serveur (`process.env`). C'est une clé **publique** : ne jamais exposer la clé **`Secret`** (anciennement `SERVICE_ROLE_KEY`).
+
+### Comptes de démo (seed local)
+
+| Email | Mot de passe | Rôle |
+|---|---|---|
+| `admin@efankatia.local` | `Admin123!` | `ROLE_ADMIN` |
+| `moderateur@efankatia.local` | `Modo123!` | `ROLE_MODERATEUR` |
+| `user@efankatia.local` | `User123!` | `ROLE_USER` |
 
 ## Routage
 
 TanStack Router en mode file-based : les routes sont des fichiers dans `src/routes/`. Après tout ajout/suppression/renommage, lancer `npm run generate-routes` (`src/routeTree.gen.ts` est généré automatiquement, ne pas l'éditer). Le layout global vit dans `src/routes/__root.tsx`.
+
+Structure actuelle :
+
+| Route | Fichier | Rôle |
+|---|---|---|
+| `/` | `src/routes/index.tsx` | Redirige vers `/app` (connecté) ou `/login`. |
+| `/login` | `src/routes/login.tsx` | Connexion (publique). |
+| `/app` | `src/routes/app.tsx` | Layout **protégé** : exige une session, sinon redirige vers `/login`. |
+| `/app/` | `src/routes/app/index.tsx` | Accueil connecté. |
 
 ## Styling
 
