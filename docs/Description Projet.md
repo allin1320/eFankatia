@@ -15,6 +15,8 @@ L'accès à l'application requiert une connexion obligatoire pour tous les utili
 * **`ROLE_MODERATEUR`** : Rôle assigné à une personne spécifique de la base. Le modérateur a le droit de créer et de modifier des fiches personnes, à condition que ces personnes appartiennent à la même lignée que la personne qui lui est assignée.
 * **`ROLE_USER`** : Utilisateur standard ayant un accès en lecture seule (consultation des fiches, recherche et affichage de l'arbre généalogique).
 
+Les rôles sont stockés dans `profiles.role` (enum `user_role`) et la lignée assignée au modérateur dans `profiles.personne_id` (voir `docs/Structure Personne.md`). L'utilisateur authentifié vit dans `auth.users` (Supabase Auth), le profil applicatif dans `profiles`.
+
 ## 4. Spécifications Fonctionnelles
 
 ### A. Création d'une personne
@@ -52,6 +54,7 @@ Le formulaire comprend les informations civiles de base, suivies du choix du mod
   * Support interactif du zoom (zoom-in / zoom-out) et du déplacement (pan/drag) pour explorer confortablement l'arbre généalogique.
 
 ### E. Traçabilité des modifications
-* Chaque personne conserve la trace de sa création et de ses modifications :
-  * À la **création** : `created_at` (horodatage) et `user_created` (utilisateur authentifié `auth.users.id` ayant créé la fiche).
-  * À chaque **modification** : mise à jour de `updated_at` (horodatage) et de `user_edited` (utilisateur authentifié `auth.users.id` ayant effectué la dernière modification).
+* Les tables `personnes` et `profiles` conservent la trace de leur création et de leurs modifications, renseignées automatiquement par des triggers PostgreSQL (voir `docs/Structure Personne.md`) :
+  * À la **création** : `created_at` (horodatage) et `user_created` (utilisateur authentifié `auth.uid()` ayant créé la fiche).
+  * À chaque **modification** : mise à jour de `updated_at` (horodatage) et de `user_edited` (utilisateur authentifié `auth.uid()` ayant effectué la dernière modification).
+* Un **historique complet** des changements peut être conservé dans la table `audit_logs` (table concernée, action, anciennes/nouvelles valeurs, auteur, horodatage).

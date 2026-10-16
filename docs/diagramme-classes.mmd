@@ -1,0 +1,114 @@
+%% Diagramme de classes — eFankatia
+%% Modèle de données Supabase (voir docs/Structure Personne.md)
+%% Règle clé : une personne ne doit jamais être dupliquée.
+%% auth_users = table système auth.users de Supabase (à ne pas modifier).
+
+classDiagram
+    direction LR
+
+    class Role {
+        <<enumeration>>
+        ROLE_ADMIN
+        ROLE_MODERATEUR
+        ROLE_USER
+    }
+
+    class auth_users {
+        +uuid id PK
+        +text email
+    }
+
+    class profiles {
+        +uuid id PK, FK
+        +text email
+        +Role role
+        +uuid personne_id FK
+        +timestamptz created_at
+        +timestamptz updated_at
+        +uuid user_created FK
+        +uuid user_edited FK
+    }
+
+    class personnes {
+        +uuid id PK
+        +text nom
+        +text prenom
+        +text appellation
+        +text numero
+        +text nom_facebook
+        +text sexe
+        +text profession
+        +date date_naissance
+        +date date_deces
+        +text pays
+        +text ville
+        +text quartier
+        +boolean estLigneeGenerale
+        +timestamptz created_at
+        +timestamptz updated_at
+        +uuid user_created FK
+        +uuid user_edited FK
+    }
+
+    class mariages {
+        +uuid id PK
+        +uuid personne_1_id FK
+        +uuid personne_2_id FK
+        +date date_mariage
+        +date date_fin
+        +text type_fin
+        +timestamptz created_at
+    }
+
+    class parent_enfants {
+        +uuid id PK
+        +uuid parent_id FK
+        +uuid enfant_id FK
+        +text type_parent
+        +timestamptz created_at
+    }
+
+    class mariage_enfants {
+        +uuid mariage_id PK, FK
+        +uuid enfant_id PK, FK
+        +timestamptz created_at
+    }
+
+    class audit_logs {
+        +bigint id PK
+        +text table_name
+        +uuid record_id
+        +text action
+        +jsonb old_data
+        +jsonb new_data
+        +uuid user_id FK
+        +timestamptz changed_at
+    }
+
+    %% Profil applicatif ↔ compte Auth (1:1)
+    profiles "1" --> "1" auth_users : id
+    profiles --> Role : role
+
+    %% Lignée assignée au modérateur (nullable)
+    profiles "0..*" --> "0..1" personnes : personne_id
+
+    %% Audit : qui a créé / modifié la ligne
+    personnes "0..*" --> "1" auth_users : user_created
+    personnes "0..*" --> "1" auth_users : user_edited
+    profiles "0..*" --> "1" auth_users : user_created
+    profiles "0..*" --> "1" auth_users : user_edited
+
+    %% Journal d'audit
+    audit_logs "0..*" --> "0..1" auth_users : user_id
+
+    %% Unions (1 personne ↔ N mariages)
+    personnes "1" --> "0..*" mariages : personne_1_id
+    personnes "1" --> "0..*" mariages : personne_2_id
+
+    %% Parenté (1 parent ↔ N enfants)
+    personnes "1" --> "0..*" parent_enfants : parent_id
+    personnes "1" --> "0..*" parent_enfants : enfant_id
+
+    %% Enfants issus d'un mariage précis
+    mariages "1" --> "0..*" mariage_enfants : mariage_id
+    personnes "1" --> "0..*" mariage_enfants : enfant_id
