@@ -1,0 +1,2 @@
+-- Seed de la base locale (rejoué lors de `supabase db reset`).
+-- Vide pour l'instant : ajouter ici les données de démo (personnes, mariages, etc.) si besoin.

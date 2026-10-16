@@ -1,18 +1,18 @@
 # 📋 To-Do List : Développement de l'application eFankatia
 
 ## Phase 1 : Configuration de la Base de Données (Supabase CLI)
-- [ ] **P1.1** Créer un nouveau projet sur **Supabase**.
-- [ ] **P1.2** Initialiser l'environnement local avec la **Supabase CLI** (`supabase init` puis `supabase start`).
-- [ ] **P1.3** Créer les tables via des **migrations** (`supabase migration new` / `supabase db push`) plutôt qu'à la main.
-- [ ] **P1.4** Créer l'enum **`user_role`** (`ROLE_ADMIN`, `ROLE_MODERATEUR`, `ROLE_USER`).
-- [ ] **P1.5** Créer la table **`personnes`** pour stocker les informations civiles, géographiques et le drapeau `estLigneeGenerale`[cite: 1].
-- [ ] **P1.6** Créer la table **`mariages`** pour gérer les unions entre deux personnes sans dupliquer les individus[cite: 1].
-- [ ] **P1.7** Créer la table **`parent_enfants`** pour gérer les relations directes parent/enfant (y compris les parents solos ou partiels)[cite: 1].
-- [ ] **P1.8** Créer la table **`mariage_enfants`** pour associer les enfants issus d'un mariage précis[cite: 1].
-- [ ] **P1.9** Créer la table **`profiles`** liée à `auth.users(id)` (rôle, `personne_id`, champs d'audit).
-- [ ] **P1.10** Créer la table **`audit_logs`** pour l'historique des modifications.
-- [ ] **P1.11** Configurer les clés étrangères et les règles de suppression en cascade (`ON DELETE CASCADE`).
-- [ ] **P1.12** Créer les **triggers d'audit** (`updated_at` via `moddatetime`, `user_created`/`user_edited` via `auth.uid()`).
+- [x] **P1.1** Créer un nouveau projet sur **Supabase**.
+- [x] **P1.2** Initialiser l'environnement local avec la **Supabase CLI** (`supabase init` puis `supabase start`).
+- [x] **P1.3** Créer les tables via des **migrations** (`supabase migration new` / `supabase db push`) plutôt qu'à la main.
+- [x] **P1.4** Créer l'enum **`user_role`** (`ROLE_ADMIN`, `ROLE_MODERATEUR`, `ROLE_USER`).
+- [x] **P1.5** Créer la table **`personnes`** pour stocker les informations civiles, géographiques et le drapeau `estLigneeGenerale`[cite: 1].
+- [x] **P1.6** Créer la table **`mariages`** pour gérer les unions entre deux personnes sans dupliquer les individus[cite: 1].
+- [x] **P1.7** Créer la table **`parent_enfants`** pour gérer les relations directes parent/enfant (y compris les parents solos ou partiels)[cite: 1].
+- [x] **P1.8** Créer la table **`mariage_enfants`** pour associer les enfants issus d'un mariage précis[cite: 1].
+- [x] **P1.9** Créer la table **`profiles`** liée à `auth.users(id)` (rôle, `personne_id`, champs d'audit).
+- [x] **P1.10** Créer la table **`audit_logs`** pour l'historique des modifications.
+- [x] **P1.11** Configurer les clés étrangères et les règles de suppression en cascade (`ON DELETE CASCADE`).
+- [x] **P1.12** Créer les **triggers d'audit** (`updated_at` via `moddatetime`, `user_created`/`user_edited` via `auth.uid()`).
 
 ## Phase 2 : Authentification, Rôles et Sécurité (Supabase Auth & RLS)
 - [ ] **P2.1** Configurer l'authentification Supabase.
