@@ -32,7 +32,7 @@ Le formulaire comprend les informations civiles de base, suivies du choix du mod
 3. **Cas particulier de l'Administrateur :**
    * L'administrateur peut saisir des personnes sans aucun mariage ni naissance (pour positionner les ancêtres fondateurs au sommet de l'arbre).
 4. **Upload des photos :**
-   * Intégration de l'upload de photos via l'API **imgbb** (`https://api.imgbb.com/`) pour stocker et lier l'URL publique de l'image au profil de la personne.
+   * Intégration de l'upload de photos via l'API **imgbb** (`https://api.imgbb.com/`) pour stocker et lier au profil de la personne l'URL publique de l'image (`urlImg`) ainsi que celle de sa miniature (`urlImgThumb`).
 
 ### B. Modification de personne et Actions Rapides
 * Depuis la fiche détaillée d'une personne, des boutons d'actions permettent de créer directement :
@@ -48,7 +48,7 @@ Le formulaire comprend les informations civiles de base, suivies du choix du mod
 ### D. Arbre Généalogique Interactif (UX / UI)
 * Accessible via un bouton dédié depuis la fiche de n'importe quelle personne.
 * **Règles d'affichage UX / UI :**
-  * Chaque nœud affiche une miniature de la photo de profil.
+  * Chaque nœud affiche une miniature de la photo de profil (champ `urlImgThumb`).
   * Si aucune photo n'est disponible, l'application affiche un avatar stylisé contenant la **première lettre de l'appellation en majuscule**.
 * **Navigation :**
   * Support interactif du zoom (zoom-in / zoom-out) et du déplacement (pan/drag) pour explorer confortablement l'arbre généalogique.

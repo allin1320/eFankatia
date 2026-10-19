@@ -60,6 +60,14 @@ npm run check             # Prettier --check .
 npm run format            # Prettier + ESLint --fix (formatage auto)
 ```
 
+### Test d'upload (imgbb)
+
+```bash
+npm run test:upload    # envoie une image de test vers imgbb et affiche l'URL publique
+```
+
+Nécessite `IMGBB_APIKEY` renseignée dans `.env`.
+
 ## Base de données (Supabase)
 
 Le schéma est versionné dans `supabase/migrations/`. **Ne jamais modifier le schéma à la main** : passer par des migrations (`supabase migration new` puis `supabase db push`).

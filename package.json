@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
-    "check": "prettier --check ."
+    "check": "prettier --check .",
+    "test:upload": "tsx --env-file=.env scripts/test-upload.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
@@ -53,6 +54,7 @@
     "eslint": "^9.20.0",
     "prettier": "^3.8.1",
     "supabase": "^2.121.0",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.2",
     "vite": "^8.0.0"
   },

@@ -28,10 +28,9 @@
 - [x] **P3.3** Générer les types TypeScript depuis le schéma avec `supabase gen types typescript`.
 - [x] **P3.4** Mettre en place le layout global, la protection des routes et la gestion des sessions utilisateur.
 
-## Phase 4 : Intégration du Stockage des Photos (imgbb API)
-- [ ] **P4.1** Créer un service utilitaire pour communiquer avec l'API **imgbb** (`https://api.imgbb.com/`).
-- [ ] **P4.2** Développer le composant d'upload d'image avec prévisualisation.
-- [ ] **P4.3** Récupérer et stocker l'URL publique de l'image dans les profils de personnes.
+## Phase 4 : Intégration du Stockage des Photos (imgbb API) — ✅ terminée (backend)
+- [x] **P4.1** Créer un service utilitaire pour communiquer avec l'API **imgbb** (`https://api.imgbb.com/`).
+- [x] **P4.3** Récupérer et stocker l'URL publique (backend) : colonnes `personnes.urlImg` (plein format) + `personnes.urlImgThumb` (miniature), helper `_insert_personne`/RPC `create_personne_*`.
 
 ## Phase 5 : Fonctionnalités Métier - Création et Saisie de Personnes
 - [ ] **P5.1** Développer le formulaire de création de personne (informations civiles et locales).
@@ -42,6 +41,7 @@
     - [ ] **P5.2.2.2** Option B : Sans mariage (sélection d'un parent unique dans `parent_enfants`)[cite: 1].
   - [ ] **P5.2.3** **Cas Admin** : Permettre de créer des personnes sans rattachement (ancêtres racines au sommet de l'arbre).
 - [ ] **P5.3** Valider la soumission via les mutations TanStack Query.
+- [ ] **P5.4** *(Front, ex-Phase 4)* Upload photo : composant d'upload avec prévisualisation + câblage persistance `urlImg`/`urlImgThumb` (RPC `create_personne_*`).
 
 ## Phase 6 : Modification, Fiche Personnelle et Actions Rapides
 - [ ] **P6.1** Créer l'interface de la fiche détaillée d'une personne.
