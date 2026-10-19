@@ -206,6 +206,7 @@ export type Database = {
           sexe: string | null
           updated_at: string
           urlImg: string | null
+          urlImgThumb: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -228,6 +229,7 @@ export type Database = {
           sexe?: string | null
           updated_at?: string
           urlImg?: string | null
+          urlImgThumb?: string | null
           user_created?: string | null
           user_edited?: string | null
           ville?: string | null
@@ -249,6 +251,7 @@ export type Database = {
           sexe?: string | null
           updated_at?: string
           urlImg?: string | null
+          urlImgThumb?: string | null
           user_created?: string | null
           user_edited?: string | null
           ville?: string | null
@@ -321,6 +324,7 @@ export type Database = {
           sexe: string | null
           updated_at: string
           urlImg: string | null
+          urlImgThumb: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -351,6 +355,7 @@ export type Database = {
           sexe: string | null
           updated_at: string
           urlImg: string | null
+          urlImgThumb: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -381,6 +386,7 @@ export type Database = {
           sexe: string | null
           updated_at: string
           urlImg: string | null
+          urlImgThumb: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -411,6 +417,7 @@ export type Database = {
           sexe: string | null
           updated_at: string
           urlImg: string | null
+          urlImgThumb: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -441,6 +448,7 @@ export type Database = {
           sexe: string | null
           updated_at: string
           urlImg: string | null
+          urlImgThumb: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
