@@ -1,13 +1,15 @@
-# Structure de base de données généalogique - Supabase[cite: 1]
+# Structure de base de données généalogique - Supabase
 
 ## Principe général
-La base doit éviter de dupliquer une même personne. Une personne est enregistrée une seule fois dans la table `personnes`[cite: 1]. Les relations familiales sont ensuite gérées par des tables séparées :
-* `personnes` : informations sur les personnes (avec le champ `estLigneeGenerale`)[cite: 1]
-* `mariages` : unions entre deux personnes[cite: 1]
-* `parent_enfants` : relations parent/enfant[cite: 1]
-* `mariage_enfants` : enfants issus d'un mariage précis[cite: 1]
-* `profiles` : profil applicatif lié à `auth.users` (rôle, lignée assignée, audit)
-* `audit_logs` : journal optionnel de toutes les modifications
+
+La base doit éviter de dupliquer une même personne. Une personne est enregistrée une seule fois dans la table `personnes`. Les relations familiales sont ensuite gérées par des tables séparées :
+
+- `personnes` : informations sur les personnes (avec le champ `estLigneeGenerale`)
+- `mariages` : unions entre deux personnes
+- `parent_enfants` : relations parent/enfant
+- `mariage_enfants` : enfants issus d'un mariage précis
+- `profiles` : profil applicatif lié à `auth.users` (rôle, lignée assignée, audit)
+- `audit_logs` : journal optionnel de toutes les modifications
 
 ## Table profiles (utilisateurs)
 
@@ -19,19 +21,20 @@ L'authentification est gérée par Supabase Auth : identifiants, email et mot de
         id           uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
         email        text,
         role         user_role NOT NULL DEFAULT 'ROLE_USER',
-        personne_id  uuid REFERENCES personnes(id),
-        created_at   timestamptz DEFAULT now(),
-        updated_at   timestamptz DEFAULT now(),
-        user_created uuid REFERENCES auth.users(id),
-        user_edited  uuid REFERENCES auth.users(id)
+        personne_id  uuid REFERENCES personnes(id) ON DELETE SET NULL,
+        created_at   timestamptz NOT NULL DEFAULT now(),
+        updated_at   timestamptz NOT NULL DEFAULT now(),
+        user_created uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+        user_edited  uuid REFERENCES auth.users(id) ON DELETE SET NULL
     );
 
-* `role` : `ROLE_ADMIN`, `ROLE_MODERATEUR` ou `ROLE_USER` (par défaut `ROLE_USER`).
-* `personne_id` : renseigné uniquement pour un `ROLE_MODERATEUR`, désigne la personne dont la lignée lui est assignée (nullable).
-* `auth.users` possède déjà `created_at` et `updated_at` en natif ; on les duplique sur `profiles` uniquement pour l'audit applicatif (qui a créé/modifié le profil).
+- `role` : `ROLE_ADMIN`, `ROLE_MODERATEUR` ou `ROLE_USER` (par défaut `ROLE_USER`).
+- `personne_id` : renseigné uniquement pour un `ROLE_MODERATEUR`, désigne la personne dont la lignée lui est assignée (nullable).
+- `auth.users` possède déjà `created_at` et `updated_at` en natif ; on les duplique sur `profiles` uniquement pour l'audit applicatif (qui a créé/modifié le profil).
 
 ## Table personnes
-Cette table contient toutes les personnes[cite: 1]. Une personne ne doit exister qu'une seule fois[cite: 1].
+
+Cette table contient toutes les personnes. Une personne ne doit exister qu'une seule fois.
 
     CREATE TABLE personnes (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -49,77 +52,89 @@ Cette table contient toutes les personnes[cite: 1]. Une personne ne doit exister
         quartier text,
         urlImg text,
         urlImgThumb text,
-        estLigneeGenerale boolean DEFAULT true,
-        created_at timestamptz DEFAULT now(),
-        updated_at timestamptz DEFAULT now(),
-        user_created uuid REFERENCES auth.users(id),
-        user_edited uuid REFERENCES auth.users(id)
+        "estLigneeGenerale" boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        user_created uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+        user_edited uuid REFERENCES auth.users(id) ON DELETE SET NULL
     );
 
 **Photo** : `urlImg` stocke l'URL publique de la photo de profil (plein format) et `urlImgThumb` sa miniature, toutes deux hébergées via l'API **imgbb** (voir Phase 4). Nullables : une personne peut ne pas avoir de photo (l'UI affiche alors la première lettre de l'appellation en majuscule).
 
 **Champs d'audit** : `created_at` / `user_created` sont renseignés à la création de la personne, et `updated_at` / `user_edited` à chaque modification. `user_created` et `user_edited` référencent l'utilisateur authentifié (`auth.users.id`) ayant effectué l'action.
 
+**Anti-doublon** : la règle est appliquée à deux niveaux — RPC `check_personne_doublon` pour le feedback applicatif, et trigger `personnes_guard_doublon` (`BEFORE INSERT OR UPDATE OF nom, prenom, date_naissance`) pour la garantie en base. La comparaison ignore casse et accents grâce à l'extension `unaccent`. Voir `docs/decision technique/phase5-personnes.md`.
+
 Exemple :
-* `P1` = Jean (`estLigneeGenerale = true`)
-* `P2` = Marie (`estLigneeGenerale = true`)
-* `P3` = Claire (`estLigneeGenerale = false`)
+
+- `P1` = Jean (`estLigneeGenerale = true`)
+- `P2` = Marie (`estLigneeGenerale = true`)
+- `P3` = Claire (`estLigneeGenerale = false`)
 
 ## Table mariages
-Cette table représente une union entre deux personnes[cite: 1]. Une même personne peut avoir plusieurs mariages[cite: 1].
+
+Cette table représente une union entre deux personnes. Une même personne peut avoir plusieurs mariages.
 
     CREATE TABLE mariages (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        personne_1_id uuid NOT NULL REFERENCES personnes(id),
-        personne_2_id uuid NOT NULL REFERENCES personnes(id),
+        personne_1_id uuid NOT NULL REFERENCES personnes(id) ON DELETE RESTRICT,
+        personne_2_id uuid NOT NULL REFERENCES personnes(id) ON DELETE RESTRICT,
         date_mariage date,
         date_fin date,
         type_fin text,
-        created_at timestamptz DEFAULT now()
+        created_at timestamptz NOT NULL DEFAULT now(),
+        CONSTRAINT mariages_no_self CHECK (personne_1_id <> personne_2_id)
     );
 
 Exemple :
-* `M1` = Jean + Marie
-* `M2` = Jean + Claire
 
-Jean existe une seule fois dans `personnes`, mais peut être référencé dans plusieurs mariages[cite: 1].
+- `M1` = Jean + Marie
+- `M2` = Jean + Claire
+
+Jean existe une seule fois dans `personnes`, mais peut être référencé dans plusieurs mariages.
 
 ## Table parent_enfants
-Cette table représente la relation entre un parent et son enfant[cite: 1].
+
+Cette table représente la relation entre un parent et son enfant.
 
     CREATE TABLE parent_enfants (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        parent_id uuid NOT NULL REFERENCES personnes(id),
-        enfant_id uuid NOT NULL REFERENCES personnes(id),
+        parent_id uuid NOT NULL REFERENCES personnes(id) ON DELETE RESTRICT,
+        enfant_id uuid NOT NULL REFERENCES personnes(id) ON DELETE RESTRICT,
         type_parent text,
-        created_at timestamptz DEFAULT now(),
-        UNIQUE(parent_id, enfant_id)
+        created_at timestamptz NOT NULL DEFAULT now(),
+        CONSTRAINT parent_enfants_parent_enfant_key UNIQUE (parent_id, enfant_id),
+        CONSTRAINT parent_enfants_no_self CHECK (parent_id <> enfant_id)
     );
 
 Exemple :
-* Jean → Paul
-* Marie → Paul
 
-Paul existe une seule fois dans `personnes`[cite: 1]. Cette table permet également de gérer un enfant dont un seul parent est connu[cite: 1].
+- Jean → Paul
+- Marie → Paul
+
+Paul existe une seule fois dans `personnes`. Cette table permet également de gérer un enfant dont un seul parent est connu.
 
 ## Table mariage_enfants
-Cette table permet de savoir de quel mariage est issu un enfant[cite: 1].
+
+Cette table permet de savoir de quel mariage est issu un enfant.
 
     CREATE TABLE mariage_enfants (
         mariage_id uuid NOT NULL REFERENCES mariages(id) ON DELETE CASCADE,
         enfant_id uuid NOT NULL REFERENCES personnes(id) ON DELETE CASCADE,
-        created_at timestamptz DEFAULT now(),
+        created_at timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY (mariage_id, enfant_id)
     );
 
 Exemple :
-* `M1` = Jean + Marie
-  * `M1` → Paul
-  * `M1` → Jeanne
-* `M2` = Jean + Claire
-  * `M2` → Marc
+
+- `M1` = Jean + Marie
+  - `M1` → Paul
+  - `M1` → Jeanne
+- `M2` = Jean + Claire
+  - `M2` → Marc
 
 ## Exemple complet
+
 Famille :
 Jean ───── Marie
 ├── Paul
@@ -129,35 +144,47 @@ Jean ───── Claire
 └── Marc
 
 Dans `personnes` :
-* `P1` = Jean
-* `P2` = Marie
-* `P3` = Claire
-* `P4` = Paul
-* `P5` = Jeanne
-* `P6` = Marc
+
+- `P1` = Jean
+- `P2` = Marie
+- `P3` = Claire
+- `P4` = Paul
+- `P5` = Jeanne
+- `P6` = Marc
 
 Dans `mariages` :
-* `M1` = P1 + P2
-* `M2` = P1 + P3
+
+- `M1` = P1 + P2
+- `M2` = P1 + P3
 
 Dans `parent_enfants` :
-* P1 → P4
-* P2 → P4
-* P1 → P5
-* P2 → P5
-* P1 → P6
-* P3 → P6
+
+- P1 → P4
+- P2 → P4
+- P1 → P5
+- P2 → P5
+- P1 → P6
+- P3 → P6
 
 Dans `mariage_enfants` :
-* M1 → P4
-* M1 → P5
-* M2 → P6
+
+- M1 → P4
+- M1 → P5
+- M2 → P6
 
 ## Rôle des relations
-`parent_enfants` répond à la question : "Qui sont les parents de cet enfant ?"[cite: 1]
-`mariage_enfants` répond à la question : "De quelle union est issu cet enfant ?"[cite: 1]
 
-Les deux relations sont différentes[cite: 1]. Cela permet de gérer plusieurs mariages, divorces, veuvages, familles recomposées, enfants hors mariage, enfants avec un seul parent connu et adoption[cite: 1].
+`parent_enfants` répond à la question : "Qui sont les parents de cet enfant ?"
+`mariage_enfants` répond à la question : "De quelle union est issu cet enfant ?"
+
+Les deux relations sont différentes. Cela permet de gérer plusieurs mariages, divorces, veuvages, familles recomposées, enfants hors mariage, enfants avec un seul parent connu et adoption.
+
+## Sécurité (RLS) et création
+
+- **RLS activée** sur toutes les tables applicatives. La lecture est ouverte à tout utilisateur authentifié ; l'écriture dépend du rôle (`is_admin`, `is_moderator`, `is_in_lignee`).
+- **Aucune policy `INSERT` sur `personnes`** : la création passe exclusivement par les RPC `SECURITY DEFINER` `create_personne_root`, `create_personne_par_mariage`, `create_personne_par_naissance_mariage` et `create_personne_par_naissance_parent`. Elles vérifient le rôle et la lignée de façon atomique, avec le rattachement dans les tables de liaison.
+- **Suppression** : `personnes` et `mariages` sont en `RESTRICT` côté clés étrangères ; le code devra délier explicitement (ou supprimer les liens) avant de supprimer une personne (voir P6.4).
+- Détail des policies et helpers : `supabase/migrations/*_auth_helpers.sql`, `*_lignee_helper.sql`, `*_enable_rls_and_policies.sql`, et `docs/Decisions Techniques.md`.
 
 ## Audit et traçabilité
 
@@ -208,15 +235,18 @@ Les champs `created_at`, `updated_at`, `user_created` et `user_edited` (sur `per
         action     text NOT NULL,
         old_data   jsonb,
         new_data   jsonb,
-        user_id    uuid REFERENCES auth.users(id),
-        changed_at timestamptz DEFAULT now()
+        user_id    uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+        changed_at timestamptz NOT NULL DEFAULT now()
     );
 
 ## Résumé
+
 AUTH.USERS ── `1:1` ── PROFILES ── `0..1:1` ── PERSONNES (personne_id)
 PERSONNES
 ├── `1:N` ── MARIAGES
-│   └── `N:N` ── MARIAGE_ENFANTS
+│ └── `N:N` ── MARIAGE_ENFANTS
 └── `N:N` ── PARENT_ENFANTS
 
-Règle principale : une personne ne doit jamais être dupliquée simplement parce qu'elle a plusieurs mariages ou plusieurs relations familiales[cite: 1].
+Règle principale : une personne ne doit jamais être dupliquée simplement parce qu'elle a plusieurs mariages ou plusieurs relations familiales.
+
+Règles de suppression : `RESTRICT` sur les liens de parenté et d'union (`mariages`, `parent_enfants`), `CASCADE` sur `mariage_enfants` et `profiles.id`, `SET NULL` sur les références d'audit et `profiles.personne_id`.

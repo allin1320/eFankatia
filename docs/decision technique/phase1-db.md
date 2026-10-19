@@ -4,16 +4,16 @@ Registre des choix de conception pris pendant la Phase 1 (Supabase CLI). Objecti
 
 ## Règles de suppression (clés étrangères)
 
-| Relation | Règle | Justification |
-|---|---|---|
+| Relation                                                 | Règle                | Justification                                                                                                                            |
+| -------------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `mariages.personne_1_id` / `personne_2_id` → `personnes` | `ON DELETE RESTRICT` | Protège l'arbre d'une suppression en cascade accidentelle. L'app devra délier explicitement avant de supprimer une personne (voir P6.4). |
-| `parent_enfants.parent_id` / `enfant_id` → `personnes` | `ON DELETE RESTRICT` | Idem. |
-| `profiles.id` → `auth.users(id)` | `ON DELETE CASCADE` | Suppression du compte auth → suppression du profil. |
-| `mariage_enfants.mariage_id` → `mariages` | `ON DELETE CASCADE` | Suppression du mariage → suppression de ses liens enfants. |
-| `mariage_enfants.enfant_id` → `personnes` | `ON DELETE CASCADE` | Suppression de l'enfant → suppression du lien. |
-| `profiles.personne_id` → `personnes` | `ON DELETE SET NULL` | Désassigne la lignée au lieu de bloquer la suppression. |
-| `user_created` / `user_edited` (audit) → `auth.users` | `ON DELETE SET NULL` | Historique conservé, suppression de compte non bloquante. |
-| `audit_logs.user_id` → `auth.users` | `ON DELETE SET NULL` | Idem. |
+| `parent_enfants.parent_id` / `enfant_id` → `personnes`   | `ON DELETE RESTRICT` | Idem.                                                                                                                                    |
+| `profiles.id` → `auth.users(id)`                         | `ON DELETE CASCADE`  | Suppression du compte auth → suppression du profil.                                                                                      |
+| `mariage_enfants.mariage_id` → `mariages`                | `ON DELETE CASCADE`  | Suppression du mariage → suppression de ses liens enfants.                                                                               |
+| `mariage_enfants.enfant_id` → `personnes`                | `ON DELETE CASCADE`  | Suppression de l'enfant → suppression du lien.                                                                                           |
+| `profiles.personne_id` → `personnes`                     | `ON DELETE SET NULL` | Désassigne la lignée au lieu de bloquer la suppression.                                                                                  |
+| `user_created` / `user_edited` (audit) → `auth.users`    | `ON DELETE SET NULL` | Historique conservé, suppression de compte non bloquante.                                                                                |
+| `audit_logs.user_id` → `auth.users`                      | `ON DELETE SET NULL` | Idem.                                                                                                                                    |
 
 ## Schéma & contraintes
 
