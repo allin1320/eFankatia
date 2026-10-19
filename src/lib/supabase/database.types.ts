@@ -205,6 +205,7 @@ export type Database = {
           quartier: string | null
           sexe: string | null
           updated_at: string
+          urlImg: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -226,6 +227,7 @@ export type Database = {
           quartier?: string | null
           sexe?: string | null
           updated_at?: string
+          urlImg?: string | null
           user_created?: string | null
           user_edited?: string | null
           ville?: string | null
@@ -246,6 +248,7 @@ export type Database = {
           quartier?: string | null
           sexe?: string | null
           updated_at?: string
+          urlImg?: string | null
           user_created?: string | null
           user_edited?: string | null
           ville?: string | null
@@ -317,6 +320,7 @@ export type Database = {
           quartier: string | null
           sexe: string | null
           updated_at: string
+          urlImg: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -346,6 +350,7 @@ export type Database = {
           quartier: string | null
           sexe: string | null
           updated_at: string
+          urlImg: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -375,6 +380,7 @@ export type Database = {
           quartier: string | null
           sexe: string | null
           updated_at: string
+          urlImg: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -404,6 +410,7 @@ export type Database = {
           quartier: string | null
           sexe: string | null
           updated_at: string
+          urlImg: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
@@ -433,6 +440,7 @@ export type Database = {
           quartier: string | null
           sexe: string | null
           updated_at: string
+          urlImg: string | null
           user_created: string | null
           user_edited: string | null
           ville: string | null
