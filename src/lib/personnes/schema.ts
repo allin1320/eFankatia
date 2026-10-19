@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import type { Personne } from '../supabase/types'
 import type { PersonneFormValues } from './types'
 
 /** Date ISO `YYYY-MM-DD` ou chaîne vide (champ optionnel). */
@@ -175,6 +176,31 @@ export function defaultPersonneFormValues(): PersonneFormValues {
     ville: '',
     quartier: '',
     mode: '',
+    conjoint_id: '',
+    mariage_id: '',
+    parent_id: '',
+    date_mariage: '',
+    photo: null,
+  }
+}
+
+/** Convertit une personne de la base en valeurs de formulaire. */
+export function personneToFormValues(personne: Personne): PersonneFormValues {
+  return {
+    nom: personne.nom ?? '',
+    prenom: personne.prenom ?? '',
+    appellation: personne.appellation ?? '',
+    sexe: personne.sexe === 'M' || personne.sexe === 'F' ? personne.sexe : '',
+    numero: personne.numero ?? '',
+    nom_facebook: personne.nom_facebook ?? '',
+    profession: personne.profession ?? '',
+    date_naissance: personne.date_naissance ?? '',
+    date_deces: personne.date_deces ?? '',
+    decede: Boolean(personne.date_deces),
+    pays: personne.pays ?? '',
+    ville: personne.ville ?? '',
+    quartier: personne.quartier ?? '',
+    mode: 'racine',
     conjoint_id: '',
     mariage_id: '',
     parent_id: '',

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
@@ -22,7 +22,7 @@ import { PersonneApercu } from './personne-apercu'
 import { PersonneSuccess } from './personne-success'
 import { RattachementSection } from './rattachement-section'
 import { SectionCard } from './section-card'
-import type { PhotoFieldStatus } from './photo-upload-field'
+import { usePersonnePhoto } from './use-personne-photo'
 import { useDebouncedValue } from '#/hooks/use-debounced-value'
 import { useAuth } from '#/lib/auth/auth-context'
 import { focusField } from '#/lib/forms/focus'
@@ -34,8 +34,9 @@ import { useCreatePersonne } from '#/lib/personnes/mutations'
 import { typeParentFromSexe } from '#/lib/personnes/payload'
 import {
   personneDoublonQueryOptions,
-  usePersonneAssignee,
+  useMariageResume,
   usePersonneDoublon,
+  usePersonneResume,
   usePersonnesCandidats,
 } from '#/lib/personnes/queries'
 import {
@@ -47,27 +48,12 @@ import {
 import type {
   MariageCandidat,
   PersonneCandidat,
+  PersonneCreatePreset,
   PersonneCreationResult,
   PersonneDoublon,
   PersonneFormValues,
   PhotoUrls,
 } from '#/lib/personnes/types'
-
-type PhotoState = {
-  file: File | null
-  previewUrl: string | null
-  urls: PhotoUrls | null
-  status: PhotoFieldStatus
-  error: string | null
-}
-
-const EMPTY_PHOTO: PhotoState = {
-  file: null,
-  previewUrl: null,
-  urls: null,
-  status: 'empty',
-  error: null,
-}
 
 function buildIssues(values: PersonneFormValues): FormIssue[] {
   const parsed = personneSchema.safeParse(values)
@@ -91,7 +77,20 @@ function buildIssues(values: PersonneFormValues): FormIssue[] {
   return issues
 }
 
-export function PersonneForm() {
+function buildDefaultValues(preset?: PersonneCreatePreset): PersonneFormValues {
+  const values = defaultPersonneFormValues()
+  if (!preset) return values
+
+  return {
+    ...values,
+    mode: preset.mode,
+    conjoint_id: preset.conjointId ?? '',
+    mariage_id: preset.mariageId ?? '',
+    parent_id: preset.parentId ?? '',
+  }
+}
+
+export function PersonneForm({ preset }: { preset?: PersonneCreatePreset }) {
   const { profile, isAdmin, isModerator } = useAuth()
   const queryClient = useQueryClient()
   const mutation = useCreatePersonne()
@@ -99,15 +98,38 @@ export function PersonneForm() {
   const [summary, setSummary] = useState<FormIssue[]>([])
   const [formError, setFormError] = useState<string | null>(null)
   const [created, setCreated] = useState<PersonneCreationResult | null>(null)
-  const [photo, setPhoto] = useState<PhotoState>(EMPTY_PHOTO)
+  const {
+    photo,
+    choose: choosePhoto,
+    remove: removePhoto,
+    reject: rejectPhoto,
+    markUploading,
+    markUploaded,
+    markError,
+    reset: resetPhoto,
+  } = usePersonnePhoto()
   const [conjoint, setConjoint] = useState<PersonneCandidat | null>(null)
   const [mariage, setMariage] = useState<MariageCandidat | null>(null)
   const [parent, setParent] = useState<PersonneCandidat | null>(null)
 
-  const previewUrlRef = useRef<string | null>(null)
+  const { data: presetConjoint } = usePersonneResume(preset?.conjointId)
+  const { data: presetMariage } = useMariageResume(preset?.mariageId)
+  const { data: presetParent } = usePersonneResume(preset?.parentId)
+
+  useEffect(() => {
+    if (presetConjoint) setConjoint(presetConjoint)
+  }, [presetConjoint])
+
+  useEffect(() => {
+    if (presetMariage) setMariage(presetMariage)
+  }, [presetMariage])
+
+  useEffect(() => {
+    if (presetParent) setParent(presetParent)
+  }, [presetParent])
 
   const form = useForm({
-    defaultValues: defaultPersonneFormValues(),
+    defaultValues: buildDefaultValues(preset),
     validators: { onSubmit: personneSchema },
     listeners: {
       onChange: () => setSummary([]),
@@ -149,7 +171,7 @@ export function PersonneForm() {
       // 2. Photo : upload à la soumission (une seule fois).
       let urls: PhotoUrls | null = photo.urls
       if (!urls && photo.file) {
-        setPhoto((prev) => ({ ...prev, status: 'uploading', error: null }))
+        markUploading()
         try {
           const prepared = await prepareImage(photo.file)
           urls = await uploadPersonnePhoto({
@@ -159,15 +181,10 @@ export function PersonneForm() {
               name: `personne-${value.nom.trim()}-${value.prenom.trim()}`,
             },
           })
-          setPhoto((prev) => ({
-            ...prev,
-            urls,
-            status: 'uploaded',
-            error: null,
-          }))
+          markUploaded(urls)
         } catch (error) {
           const message = mapPhotoError(error)
-          setPhoto((prev) => ({ ...prev, status: 'error', error: message }))
+          markError(message)
           setFormError(message)
           return
         }
@@ -221,7 +238,7 @@ export function PersonneForm() {
   const { data: allPersonnes } = usePersonnesCandidats('', isAdmin)
   const baseVide = isAdmin && (allPersonnes?.length ?? 0) === 0
 
-  const { data: assignedPerson } = usePersonneAssignee(
+  const { data: assignedPerson } = usePersonneResume(
     isModerator ? (profile?.personne_id ?? null) : null,
   )
   const ligneeHint =
@@ -229,47 +246,22 @@ export function PersonneForm() {
       ? `Vous créez dans la lignée de ${formatPersonneName(assignedPerson)}.`
       : undefined
 
-  useEffect(() => {
-    return () => {
-      if (previewUrlRef.current) {
-        URL.revokeObjectURL(previewUrlRef.current)
-      }
-    }
-  }, [])
-
-  const updatePreviewUrl = (url: string | null) => {
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current)
-    }
-    previewUrlRef.current = url
-  }
-
   const handlePhotoSelect = (file: File) => {
-    const url = URL.createObjectURL(file)
-    updatePreviewUrl(url)
-    setPhoto({
-      file,
-      previewUrl: url,
-      urls: null,
-      status: 'ready',
-      error: null,
-    })
+    choosePhoto(file)
     setFormError(null)
   }
 
   const handlePhotoRemove = () => {
-    updatePreviewUrl(null)
-    setPhoto(EMPTY_PHOTO)
+    removePhoto()
   }
 
   const handlePhotoReject = (message: string) => {
-    setPhoto((prev) => ({ ...prev, status: 'error', error: message }))
+    rejectPhoto(message)
   }
 
   const handleCreateAnother = () => {
-    form.reset()
-    updatePreviewUrl(null)
-    setPhoto(EMPTY_PHOTO)
+    form.reset(defaultPersonneFormValues())
+    resetPhoto()
     setConjoint(null)
     setMariage(null)
     setParent(null)

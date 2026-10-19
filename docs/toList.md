@@ -48,17 +48,33 @@
 - [x] **P5.3** Valider la soumission via les mutations TanStack Query.
 - [x] **P5.4** _(Front, ex-Phase 4)_ Upload photo : composant d'upload avec prévisualisation + câblage persistance `urlImg`/`urlImgThumb` (RPC `create_personne_*`).
 
-## Phase 6 : Modification, Fiche Personnelle et Actions Rapides
+## Phase 6 : Modification, Fiche Personnelle et Actions Rapides — ✅ terminée
 
-- [ ] **P6.1** Créer l'interface de la fiche détaillée d'une personne.
-- [ ] **P6.2** Ajouter les boutons d'actions rapides (créer un enfant, créer un mariage).
-- [ ] **P6.3** Implémenter la modification d'une personne selon le rôle.
-- [ ] **P6.4** Implémenter la suppression d'une personne avec les contrôles de sécurité.
+- [x] **P6.1** Créer l’interface de la fiche détaillée d’une personne.
+  - [x] **P6.1.1** RPC `get_personne_fiche` (personne + parents + unions + enfants + `can_edit` / `can_delete`).
+  - [x] **P6.1.2** Route `/app/personnes/$personneId` avec états skeleton / erreur / introuvable.
+- [x] **P6.2** Ajouter les boutons d’actions rapides (créer un enfant, créer un mariage).
+  - [x] **P6.2.1** Préremplissage du formulaire de création via search params (`mode`, `parent`, `conjoint`, `mariage`).
+  - [x] **P6.2.2** Actions contextuelles depuis chaque union (« Enfant de cette union »).
+- [x] **P6.3** Implémenter la modification d’une personne selon le rôle.
+  - [x] **P6.3.1** Formulaire d’édition réutilisant `IdentiteSection` / `OriginesSection`.
+  - [x] **P6.3.2** Photo (conserver / remplacer / retirer) via `usePersonnePhoto`.
+  - [x] **P6.3.3** Verrou optimiste sur `updated_at`.
+- [x] **P6.4** Implémenter la suppression d’une personne avec les contrôles de sécurité.
+  - [x] **P6.4.1** RPC transactionnelle `delete_personne` + garde « référence de lignée ».
+  - [x] **P6.4.2** Dialogue de confirmation avec impact détaillé.
+- [x] **P6.5** Gestion des unions (dates, `type_fin`, suppression).
+- [x] **P6.6** Documenter et valider (`lint`, `build`, tests manuels).
 
-## Phase 7 : Recherche et Consultation
+## Phase 7 : Recherche et Consultation — ✅ terminée
 
-- [ ] **P7.1** Développer l'interface de recherche globale (par nom, prénom, appellation, profession).
-- [ ] **P7.2** Optimiser les requêtes de recherche pour fluidifier l'expérience utilisateur.
+- [x] **P7.1** Développer l’interface de recherche globale (par nom, prénom, appellation, profession).
+  - [x] **P7.1.1** RPC `search_personnes` + route `/app/recherche` avec état d’URL.
+  - [x] **P7.1.2** Accès depuis l’en-tête et le dashboard.
+- [x] **P7.2** Optimiser les requêtes de recherche pour fluidifier l’expérience utilisateur.
+  - [x] **P7.2.1** `pg_trgm` + `immutable_unaccent` + index GIN trigram.
+  - [x] **P7.2.2** Debounce 300 ms, pagination « Charger plus », `keepPreviousData`.
+- [x] **P7.3** Documenter et valider (`lint`, `build`, tests manuels).
 
 ## Phase 8 : Arbre Généalogique Interactif (UX / UI)
 

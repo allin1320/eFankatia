@@ -75,6 +75,6 @@ Le formulaire comprend les informations civiles de base, suivies du choix du mod
 
 - `docs/Structure Personne.md` — modèle de données Supabase et règles de suppression.
 - `docs/Decisions Techniques.md` — registre central des décisions (index par phase, RLS, anti-doublon, conventions).
-- `docs/decision technique/` — détail des décisions par phase (P1, P3, P4, P5).
+- `docs/decision technique/` — détail des décisions par phase (P1, P3, P4, P5, P6, P7).
 - `docs/toList.md` — plan de développement par phases.
 - `docs/diagramme-classes.mmd` — diagramme de classes Mermaid.

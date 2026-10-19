@@ -12,6 +12,14 @@ export type RattachementMode =
 /** Rôle du parent pour un rattachement par naissance sans mariage. */
 export type TypeParent = 'pere' | 'mere' | 'parent'
 
+/** Préremplissage du formulaire de création depuis une fiche (actions rapides). */
+export type PersonneCreatePreset = {
+  mode: RattachementMode
+  conjointId?: string
+  mariageId?: string
+  parentId?: string
+}
+
 /** URLs renvoyées par l'upload imgbb. */
 export type PhotoUrls = {
   urlImg: string
@@ -82,14 +90,6 @@ export type PersonneDoublon = {
   appellation: string | null
   date_naissance: string | null
   url_img_thumb: string | null
-}
-
-/** Personne assignée à un modérateur (indicateur de lignée). */
-export type PersonneAssignee = {
-  id: string
-  nom: string | null
-  prenom: string | null
-  appellation: string | null
 }
 
 /**

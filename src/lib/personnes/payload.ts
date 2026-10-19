@@ -1,3 +1,5 @@
+import type { PersonneUpdate } from '../supabase/types'
+import type { PhotoUpdate } from './fiche-types'
 import type {
   PersonneFormValues,
   PersonneRpcPayload,
@@ -79,6 +81,47 @@ export function buildPersonnePayload(
 
   if (values.mode === 'naissance_parent' && options.typeParent) {
     payload.type_parent = options.typeParent
+  }
+
+  return payload
+}
+
+/**
+ * Construit le payload de modification d'une personne.
+ *
+ * Contrairement à la création, les champs vides deviennent explicitement
+ * `null` afin de permettre l'effacement d'une valeur. Les colonnes d'audit et
+ * `estLigneeGenerale` ne sont jamais envoyées.
+ */
+export function buildPersonneUpdatePayload(
+  values: PersonneFormValues,
+  options: { photo: PhotoUpdate },
+): PersonneUpdate {
+  if (values.sexe !== 'M' && values.sexe !== 'F') {
+    throw new Error('Le sexe est obligatoire.')
+  }
+
+  const payload: PersonneUpdate = {
+    nom: values.nom.trim(),
+    prenom: values.prenom.trim(),
+    appellation: values.appellation.trim(),
+    sexe: values.sexe,
+    numero: text(values.numero) ?? null,
+    nom_facebook: text(values.nom_facebook) ?? null,
+    profession: text(values.profession) ?? null,
+    date_naissance: text(values.date_naissance) ?? null,
+    date_deces: values.decede ? (text(values.date_deces) ?? null) : null,
+    pays: text(values.pays) ?? null,
+    ville: text(values.ville) ?? null,
+    quartier: text(values.quartier) ?? null,
+  }
+
+  if (options.photo.kind === 'set') {
+    payload.urlImg = options.photo.urls.urlImg
+    payload.urlImgThumb = options.photo.urls.urlImgThumb
+  } else if (options.photo.kind === 'remove') {
+    payload.urlImg = null
+    payload.urlImgThumb = null
   }
 
   return payload

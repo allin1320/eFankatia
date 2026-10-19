@@ -476,6 +476,9 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database['public']['Enums']['user_role']
       }
+      delete_personne: { Args: { p_id: string }; Returns: Json }
+      get_personne_fiche: { Args: { p_id: string }; Returns: Json }
+      immutable_unaccent: { Args: { p_value: string }; Returns: string }
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
       is_in_lignee: { Args: { target: string }; Returns: boolean }
       is_moderator: { Args: Record<PropertyKey, never>; Returns: boolean }
@@ -499,6 +502,24 @@ export type Database = {
           personne_2_sexe: string
           personne_2_url_img_thumb: string
           type_fin: string
+        }[]
+      }
+      search_personnes: {
+        Args: { p_limit?: number; p_offset?: number; p_query?: string }
+        Returns: {
+          appellation: string
+          date_deces: string
+          date_naissance: string
+          est_lignee_generale: boolean
+          id: string
+          nom: string
+          pays: string
+          prenom: string
+          profession: string
+          sexe: string
+          total_count: number
+          url_img_thumb: string
+          ville: string
         }[]
       }
       search_personnes_candidats: {

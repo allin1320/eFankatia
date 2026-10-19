@@ -183,7 +183,9 @@ Les deux relations sont différentes. Cela permet de gérer plusieurs mariages, 
 
 - **RLS activée** sur toutes les tables applicatives. La lecture est ouverte à tout utilisateur authentifié ; l'écriture dépend du rôle (`is_admin`, `is_moderator`, `is_in_lignee`).
 - **Aucune policy `INSERT` sur `personnes`** : la création passe exclusivement par les RPC `SECURITY DEFINER` `create_personne_root`, `create_personne_par_mariage`, `create_personne_par_naissance_mariage` et `create_personne_par_naissance_parent`. Elles vérifient le rôle et la lignée de façon atomique, avec le rattachement dans les tables de liaison.
-- **Suppression** : `personnes` et `mariages` sont en `RESTRICT` côté clés étrangères ; le code devra délier explicitement (ou supprimer les liens) avant de supprimer une personne (voir P6.4).
+- **Lecture de la fiche** : RPC `get_personne_fiche(p_id)` (`security invoker`) qui renvoie la personne, ses parents, ses unions et ses enfants, ainsi que `can_edit` / `can_delete`.
+- **Recherche** : RPC `search_personnes(p_query, p_limit, p_offset)` (`security invoker`), index trigram (`pg_trgm`) sur une expression normalisée sans accents via `public.immutable_unaccent`.
+- **Suppression** : `personnes` et `mariages` sont en `RESTRICT` côté clés étrangères ; la suppression passe par la RPC transactionnelle `delete_personne(p_id)`, qui délie d'abord (`mariage_enfants`, `parent_enfants`, `mariages`) puis supprime la personne (P6.4).
 - Détail des policies et helpers : `supabase/migrations/*_auth_helpers.sql`, `*_lignee_helper.sql`, `*_enable_rls_and_policies.sql`, et `docs/Decisions Techniques.md`.
 
 ## Audit et traçabilité

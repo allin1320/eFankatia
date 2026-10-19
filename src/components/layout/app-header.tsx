@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { TreeDeciduous } from 'lucide-react'
+import { Search, TreeDeciduous } from 'lucide-react'
 
+import { Button } from '#/components/ui/button'
 import { ThemeToggle } from './theme-toggle'
 import { UserMenu } from './user-menu'
 
@@ -26,6 +27,17 @@ export function AppHeader() {
         </Link>
 
         <div className="flex items-center gap-1">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="size-11 sm:size-9"
+          >
+            <Link to="/app/recherche" search={{ q: '', notice: undefined }}>
+              <Search />
+              <span className="sr-only">Rechercher un membre</span>
+            </Link>
+          </Button>
           <ThemeToggle />
           <UserMenu />
         </div>
