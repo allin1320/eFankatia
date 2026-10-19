@@ -40,6 +40,11 @@ npm run format            # Prettier + ESLint --fix (formatage auto)
 
 Il n'y a **pas de script de test ni de typecheck** (`tsc` a `noEmit: true`). Vérifier via `lint` + `build`.
 
+## Tests & validation (règles strictes)
+
+- **Ne jamais ouvrir de navigateur pour tester** : l'utilisateur fait les tests manuellement. Exception : uniquement si tu le demandes **et** qu'il confirme explicitement.
+- **Toujours demander avant de créer** un test E2E, unitaire ou tout autre type de test (fichier, framework, dépendance). Ne rien ajouter sans accord explicite.
+
 ## Routing (pièges)
 
 - Routes = fichiers dans `src/routes/` (file-based).

@@ -13,6 +13,8 @@
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check .",
+    "seed:user:admin-create": "tsx --env-file=.env scripts/seed-admin.ts",
+    "db:reset": "supabase db reset --no-seed && npm run seed:user:admin-create",
     "test:upload": "tsx --env-file=.env scripts/test-upload.ts"
   },
   "dependencies": {
@@ -32,6 +34,7 @@
     "@tanstack/react-table": "9.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "cn": "^0.4.0",
     "lucide-react": "^0.577.0",
     "radix-ui": "^1.8.1",
