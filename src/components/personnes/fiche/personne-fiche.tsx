@@ -5,6 +5,7 @@ import {
   CalendarDaysIcon,
   HeartHandshakeIcon,
   MapPinIcon,
+  NetworkIcon,
   PencilIcon,
   PlusIcon,
   UserRoundIcon,
@@ -107,6 +108,20 @@ export function PersonneFicheView({
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2 border-t border-[var(--line)] pt-5">
+          <Button
+            asChild
+            variant={canEdit ? 'outline' : 'brand'}
+            className="h-10"
+          >
+            <Link
+              to="/app/arbre"
+              search={{ personne: personne.id, complet: true }}
+            >
+              <NetworkIcon />
+              Voir l’arbre
+            </Link>
+          </Button>
+
           {canEdit ? (
             <>
               <Button asChild variant="brand" className="h-10">

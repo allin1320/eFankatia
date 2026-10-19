@@ -477,7 +477,12 @@ export type Database = {
         Returns: Database['public']['Enums']['user_role']
       }
       delete_personne: { Args: { p_id: string }; Returns: Json }
+      get_arbre_personne: {
+        Args: { p_ancetres?: number; p_descendants?: number; p_id: string }
+        Returns: Json
+      }
       get_personne_fiche: { Args: { p_id: string }; Returns: Json }
+      get_personne_racine: { Args: Record<PropertyKey, never>; Returns: string }
       immutable_unaccent: { Args: { p_value: string }; Returns: string }
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
       is_in_lignee: { Args: { target: string }; Returns: boolean }

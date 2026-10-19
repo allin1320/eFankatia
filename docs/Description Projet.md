@@ -57,10 +57,11 @@ Le formulaire comprend les informations civiles de base, suivies du choix du mod
 
 ### D. Arbre Généalogique Interactif (UX / UI)
 
-- Accessible via un bouton dédié depuis la fiche de n'importe quelle personne.
+- Accessible via un bouton dédié depuis la fiche de n'importe quelle personne (arbre complet), ou depuis le bouton « Explorer » (racine familiale, 3 générations par défaut).
 - **Règles d'affichage UX / UI :**
   - Chaque nœud affiche une miniature de la photo de profil (champ `urlImgThumb`).
   - Si aucune photo n'est disponible, l'application affiche un avatar stylisé contenant la **première lettre de l'appellation en majuscule**.
+  - Un bouton « + » placé sur une branche affiche la génération suivante (ascendants ou descendants) de la personne sélectionnée.
 - **Navigation :**
   - Support interactif du zoom (zoom-in / zoom-out) et du déplacement (pan/drag) pour explorer confortablement l'arbre généalogique.
 
@@ -75,6 +76,6 @@ Le formulaire comprend les informations civiles de base, suivies du choix du mod
 
 - `docs/Structure Personne.md` — modèle de données Supabase et règles de suppression.
 - `docs/Decisions Techniques.md` — registre central des décisions (index par phase, RLS, anti-doublon, conventions).
-- `docs/decision technique/` — détail des décisions par phase (P1, P3, P4, P5, P6, P7).
+- `docs/decision technique/` — détail des décisions par phase (P1, P3, P4, P5, P6, P7, P8).
 - `docs/toList.md` — plan de développement par phases.
 - `docs/diagramme-classes.mmd` — diagramme de classes Mermaid.

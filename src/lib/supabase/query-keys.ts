@@ -13,6 +13,8 @@ export const personneKeys = {
     [...personneKeys.all, 'doublon', { nom, prenom, dateNaissance }] as const,
   resume: (id: string) => [...personneKeys.all, 'resume', id] as const,
   fiche: (id: string) => [...personneKeys.all, 'fiche', id] as const,
+  arbre: (id: string) => [...personneKeys.all, 'arbre', id] as const,
+  racine: () => [...personneKeys.all, 'racine'] as const,
 }
 
 export const mariageKeys = {

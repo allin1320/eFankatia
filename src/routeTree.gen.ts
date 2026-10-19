@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppArbreRouteImport } from './routes/app/arbre'
 import { Route as AppRechercheRouteImport } from './routes/app/recherche'
 import { Route as AppPersonnesNouvelleRouteImport } from './routes/app/personnes/nouvelle'
 import { Route as AppPersonnesPersonneIdIndexRouteImport } from './routes/app/personnes/$personneId/index'
@@ -36,6 +37,11 @@ const LoginRoute = LoginRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppArbreRoute = AppArbreRouteImport.update({
+  id: '/arbre',
+  path: '/arbre',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRechercheRoute = AppRechercheRouteImport.update({
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/app/arbre': typeof AppArbreRoute
   '/app/recherche': typeof AppRechercheRoute
   '/app/': typeof AppIndexRoute
   '/app/personnes/nouvelle': typeof AppPersonnesNouvelleRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/app/arbre': typeof AppArbreRoute
   '/app/recherche': typeof AppRechercheRoute
   '/app': typeof AppIndexRoute
   '/app/personnes/nouvelle': typeof AppPersonnesNouvelleRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/app/arbre': typeof AppArbreRoute
   '/app/recherche': typeof AppRechercheRoute
   '/app/': typeof AppIndexRoute
   '/app/personnes/nouvelle': typeof AppPersonnesNouvelleRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/login'
+    | '/app/arbre'
     | '/app/recherche'
     | '/app/'
     | '/app/personnes/nouvelle'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/app/arbre'
     | '/app/recherche'
     | '/app'
     | '/app/personnes/nouvelle'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/login'
+    | '/app/arbre'
     | '/app/recherche'
     | '/app/'
     | '/app/personnes/nouvelle'
@@ -159,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/arbre': {
+      id: '/app/arbre'
+      path: '/arbre'
+      fullPath: '/app/arbre'
+      preLoaderRoute: typeof AppArbreRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/recherche': {
       id: '/app/recherche'
       path: '/recherche'
@@ -191,6 +210,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppArbreRoute: typeof AppArbreRoute
   AppRechercheRoute: typeof AppRechercheRoute
   AppIndexRoute: typeof AppIndexRoute
   AppPersonnesNouvelleRoute: typeof AppPersonnesNouvelleRoute
@@ -199,6 +219,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppArbreRoute: AppArbreRoute,
   AppRechercheRoute: AppRechercheRoute,
   AppIndexRoute: AppIndexRoute,
   AppPersonnesNouvelleRoute: AppPersonnesNouvelleRoute,

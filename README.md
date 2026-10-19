@@ -60,6 +60,7 @@ npm run check             # Prettier --check .
 npm run format            # Prettier + ESLint --fix (formatage auto)
 npm run db:reset               # db reset local + seed administrateur
 npm run seed:user:admin-create # crée / met à jour l'administrateur (ADMIN_*)
+npm run seed:personne:test     # personnes de test : 2 lignées sur 6 générations
 ```
 
 ### Test d'upload (imgbb)
