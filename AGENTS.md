@@ -11,7 +11,8 @@ Guide compact pour les agents travaillant sur **eFankatia** (application web d'a
 - Toujours lire `docs/Description Projet.md` en début de session : description globale du projet (objectif, stack, RBAC, fonctionnalités).
 - Autres docs dans `docs/` :
   - `docs/Structure Personne.md` — modèle de données Supabase (4 tables + règle métier clé : une personne ne doit jamais être dupliquée).
-  - `docs/Decisions Techniques.md` — registre des décisions de conception (règles de suppression FK, conventions, workflow).
+  - `docs/Decisions Techniques.md` — registre central des décisions de conception (règles de suppression FK, anti-doublon, RLS, conventions, workflow).
+  - `docs/decision technique/` — détail des décisions par phase (`phase1-db`, `phase3-frontend`, `phase4-imgbb`, `phase5-personnes`).
   - `docs/toList.md` — plan de développement par phases.
 
 ## Git
@@ -25,7 +26,7 @@ Guide compact pour les agents travaillant sur **eFankatia** (application web d'a
 - **Tailwind CSS v4** : config CSS-first dans `src/styles.css`, **pas de `tailwind.config.js`**.
 - **shadcn/ui** : style `new-york`, base `zinc`, variables CSS, icônes `lucide`.
 - **Supabase** (PostgreSQL, Auth, RLS) : la base se gère via la **Supabase CLI** — migrations (`supabase migration new` / `supabase db push`) et types générés (`supabase gen types typescript`). Ne pas éditer le schéma à la main.
-- **Supabase** et **imgbb** (photos) : le schéma est versionné dans `supabase/migrations/` (voir `README.md`). Le **client Supabase** et les `.env` ne sont **pas encore câblés** dans le code. Ne pas supposer qu'un client Supabase existe.
+- **Supabase** et **imgbb** (photos) : le schéma est versionné dans `supabase/migrations/` (voir `README.md`). Le **client Supabase est câblé** (`src/lib/supabase/client.ts` et `server.ts`) avec une session SSR en cookies via `@supabase/ssr`. Les `.env` locaux ne sont pas committés ; `.env.example` documente les variables.
 
 ## Commandes
 

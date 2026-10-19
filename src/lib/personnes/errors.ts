@@ -51,11 +51,26 @@ export function mapPersonneError(error: unknown): string {
     }
 
     if (isUnauthorized(error)) {
+      if (/lignée|reference|référence|administrateur/i.test(error.message)) {
+        return error.message
+      }
       return 'Action non autorisée : cette personne ne fait pas partie de votre lignée.'
     }
 
     if (error.code === '23505') {
       return "Une personne avec ce nom et ce prénom existe déjà. Renseignez une date de naissance différente s'il s'agit d'une autre personne."
+    }
+
+    if (error.code === '23503') {
+      return 'Cette personne est encore liée à des données familiales. Rechargez la fiche puis réessayez.'
+    }
+
+    if (error.code === 'PGRST116') {
+      return 'La fiche a été modifiée entre-temps. Rechargez-la puis recommencez votre modification.'
+    }
+
+    if (error.code === 'P0002') {
+      return "Cette personne n'existe plus. Elle a peut-être déjà été supprimée."
     }
 
     if (error.code === '23514') {

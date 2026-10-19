@@ -12,13 +12,13 @@ Registre des choix de conception pris pendant la Phase 3 (initialisation du fron
 
 ## Protection des routes
 
-| Route | Règle |
-|---|---|
-| `/` (`index.tsx`) | Redirige vers `/app` si connecté, sinon `/login`. |
-| `/login` | Redirige vers `/app` si déjà connecté. |
+| Route              | Règle                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| `/` (`index.tsx`)  | Redirige vers `/app` si connecté, sinon `/login`.                                        |
+| `/login`           | Redirige vers `/app` si déjà connecté.                                                   |
 | `/app` (`app.tsx`) | Layout protégé : `beforeLoad` → `redirect('/login?redirect=<path>')` si non authentifié. |
 
-- **Choix `app.tsx` (segment de chemin) plutôt que `_app.tsx` (layout *pathless*)** : un layout `_app` n'ajoute pas de segment et son `index` entrerait en conflit avec la route `/` racine. `app.tsx` + `app/index.tsx` donnent `/app` proprement et accueilleront `app/personnes`, `app/recherche`, etc.
+- **Choix `app.tsx` (segment de chemin) plutôt que `_app.tsx` (layout _pathless_)** : un layout `_app` n'ajoute pas de segment et son `index` entrerait en conflit avec la route `/` racine. `app.tsx` + `app/index.tsx` donnent `/app` proprement et accueilleront `app/personnes`, `app/recherche`, etc.
 
 ## Variables d'environnement
 

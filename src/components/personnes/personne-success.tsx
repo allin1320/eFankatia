@@ -85,18 +85,23 @@ export function PersonneSuccess({
         </div>
 
         <div className="mt-7 flex flex-col-reverse justify-center gap-2 sm:flex-row">
-          <Button asChild variant="outline">
-            <Link to="/app">Retour à l’accueil</Link>
-          </Button>
-          <Button variant="brand" onClick={onCreateAnother}>
+          <Button variant="outline" onClick={onCreateAnother}>
             <PlusIcon />
             Créer une autre personne
+          </Button>
+          <Button asChild variant="brand">
+            <Link
+              to="/app/personnes/$personneId"
+              params={{ personneId: personne.id }}
+            >
+              Voir la fiche
+            </Link>
           </Button>
         </div>
 
         <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
           <UserPlusIcon className="size-3.5" aria-hidden="true" />
-          Retrouvez cette personne dans l’arbre dès qu’il sera disponible.
+          Complétez la fiche pour ajouter les liens familiaux.
         </p>
       </div>
     </div>

@@ -11,7 +11,8 @@ export const personneKeys = {
     [...personneKeys.all, 'candidats', query] as const,
   doublon: (nom: string, prenom: string, dateNaissance: string | null) =>
     [...personneKeys.all, 'doublon', { nom, prenom, dateNaissance }] as const,
-  detail: (id: string) => [...personneKeys.all, 'detail', id] as const,
+  resume: (id: string) => [...personneKeys.all, 'resume', id] as const,
+  fiche: (id: string) => [...personneKeys.all, 'fiche', id] as const,
 }
 
 export const mariageKeys = {
@@ -26,4 +27,10 @@ export const parentEnfantKeys = {
 
 export const mariageEnfantKeys = {
   all: ['mariage_enfants'] as const,
+}
+
+export const searchKeys = {
+  all: ['search'] as const,
+  personnes: (query: string) =>
+    [...searchKeys.all, 'personnes', query] as const,
 }

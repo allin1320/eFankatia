@@ -6,8 +6,11 @@ import { Button } from '#/components/ui/button'
 import { PersonneForm } from '#/components/personnes/personne-form'
 import { useAuth } from '#/lib/auth/auth-context'
 import { requireRole } from '#/lib/auth/guards'
+import { validatePersonneCreateSearch } from '#/lib/personnes/navigation'
+import type { PersonneCreatePreset } from '#/lib/personnes/types'
 
 export const Route = createFileRoute('/app/personnes/nouvelle')({
+  validateSearch: validatePersonneCreateSearch,
   beforeLoad: ({ context }) => {
     requireRole(context.profile, ['ROLE_ADMIN', 'ROLE_MODERATEUR'])
   },
@@ -16,16 +19,40 @@ export const Route = createFileRoute('/app/personnes/nouvelle')({
 
 function NouvellePersonnePage() {
   const { isModerator, profile } = useAuth()
+  const search = Route.useSearch()
   const ligneeManquante = isModerator && !profile?.personne_id
+
+  const preset: PersonneCreatePreset | undefined = search.mode
+    ? {
+        mode: search.mode,
+        conjointId: search.conjoint,
+        mariageId: search.mariage,
+        parentId: search.parent,
+      }
+    : undefined
+
+  const retour = preset
+    ? (search.parent ?? search.conjoint ?? search.mariage)
+    : undefined
 
   return (
     <div className="space-y-6">
       <div>
         <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
-          <Link to="/app">
-            <ArrowLeftIcon />
-            Retour à l’accueil
-          </Link>
+          {retour ? (
+            <Link
+              to="/app/personnes/$personneId"
+              params={{ personneId: retour }}
+            >
+              <ArrowLeftIcon />
+              Retour à la fiche
+            </Link>
+          ) : (
+            <Link to="/app">
+              <ArrowLeftIcon />
+              Retour à l’accueil
+            </Link>
+          )}
         </Button>
         <p className="island-kicker">Ajouter une personne</p>
         <h1 className="display-title mt-2 text-3xl font-semibold text-[var(--sea-ink)] sm:text-4xl">
@@ -47,7 +74,16 @@ function NouvellePersonnePage() {
           </AlertDescription>
         </Alert>
       ) : (
-        <PersonneForm />
+        <PersonneForm
+          key={
+            search.parent ??
+            search.conjoint ??
+            search.mariage ??
+            search.mode ??
+            'nouvelle'
+          }
+          preset={preset}
+        />
       )}
     </div>
   )

@@ -15,11 +15,13 @@ const FEATURES = [
     icon: Search,
     title: 'Recherche',
     description: 'Retrouvez un membre par nom, prénom ou profession.',
+    available: true,
   },
   {
     icon: Network,
     title: 'Arbre généalogique',
     description: 'Explorez l’arbre de manière interactive et fluide.',
+    available: false,
   },
 ] as const
 
@@ -54,7 +56,7 @@ function Dashboard() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURES.map(({ icon: Icon, title, description }) => (
+        {FEATURES.map(({ icon: Icon, title, description, available }) => (
           <article key={title} className="feature-card rounded-2xl p-6">
             <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--sand)] text-[var(--palm)]">
               <Icon className="size-5" />
@@ -63,9 +65,17 @@ function Dashboard() {
               {title}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-            <Badge variant="outline" className="mt-4">
-              Bientôt disponible
-            </Badge>
+            {available ? (
+              <Button asChild variant="outline" size="sm" className="mt-4">
+                <Link to="/app/recherche" search={{ q: '', notice: undefined }}>
+                  Rechercher
+                </Link>
+              </Button>
+            ) : (
+              <Badge variant="outline" className="mt-4">
+                Bientôt disponible
+              </Badge>
+            )}
           </article>
         ))}
 
