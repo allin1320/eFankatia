@@ -32,16 +32,16 @@
 - [x] **P4.1** Créer un service utilitaire pour communiquer avec l'API **imgbb** (`https://api.imgbb.com/`).
 - [x] **P4.3** Récupérer et stocker l'URL publique (backend) : colonnes `personnes.urlImg` (plein format) + `personnes.urlImgThumb` (miniature), helper `_insert_personne`/RPC `create_personne_*`.
 
-## Phase 5 : Fonctionnalités Métier - Création et Saisie de Personnes
-- [ ] **P5.1** Développer le formulaire de création de personne (informations civiles et locales).
-- [ ] **P5.2** Implémenter la logique conditionnelle de rattachement :
-  - [ ] **P5.2.1** **Par Mariage** (`estLigneeGenerale = false`) : Sélection du conjoint dans la table `mariages`[cite: 1].
-  - [ ] **P5.2.2** **Par Naissance** (`estLigneeGenerale = true`) :
-    - [ ] **P5.2.2.1** Option A : Par mariage (remplissage automatique des parents, enregistrement dans `parent_enfants` et `mariage_enfants`)[cite: 1].
-    - [ ] **P5.2.2.2** Option B : Sans mariage (sélection d'un parent unique dans `parent_enfants`)[cite: 1].
-  - [ ] **P5.2.3** **Cas Admin** : Permettre de créer des personnes sans rattachement (ancêtres racines au sommet de l'arbre).
-- [ ] **P5.3** Valider la soumission via les mutations TanStack Query.
-- [ ] **P5.4** *(Front, ex-Phase 4)* Upload photo : composant d'upload avec prévisualisation + câblage persistance `urlImg`/`urlImgThumb` (RPC `create_personne_*`).
+## Phase 5 : Fonctionnalités Métier - Création et Saisie de Personnes — ✅ terminée
+- [x] **P5.1** Développer le formulaire de création de personne (informations civiles et locales).
+- [x] **P5.2** Implémenter la logique conditionnelle de rattachement :
+  - [x] **P5.2.1** **Par Mariage** (`estLigneeGenerale = false`) : Sélection du conjoint dans la table `mariages`[cite: 1].
+  - [x] **P5.2.2** **Par Naissance** (`estLigneeGenerale = true`) :
+    - [x] **P5.2.2.1** Option A : Par mariage (remplissage automatique des parents, enregistrement dans `parent_enfants` et `mariage_enfants`)[cite: 1].
+    - [x] **P5.2.2.2** Option B : Sans mariage (sélection d'un parent unique dans `parent_enfants`)[cite: 1].
+  - [x] **P5.2.3** **Cas Admin** : Permettre de créer des personnes sans rattachement (ancêtres racines au sommet de l'arbre).
+- [x] **P5.3** Valider la soumission via les mutations TanStack Query.
+- [x] **P5.4** *(Front, ex-Phase 4)* Upload photo : composant d'upload avec prévisualisation + câblage persistance `urlImg`/`urlImgThumb` (RPC `create_personne_*`).
 
 ## Phase 6 : Modification, Fiche Personnelle et Actions Rapides
 - [ ] **P6.1** Créer l'interface de la fiche détaillée d'une personne.

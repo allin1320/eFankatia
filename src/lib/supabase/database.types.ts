@@ -336,6 +336,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      check_personne_doublon: {
+        Args: { p_date_naissance?: string; p_nom: string; p_prenom: string }
+        Returns: {
+          appellation: string
+          date_naissance: string
+          id: string
+          nom: string
+          prenom: string
+          url_img_thumb: string
+        }[]
+      }
       create_personne_par_mariage: {
         Args: { p_conjoint_id: string; p_new: Json }
         Returns: {
@@ -469,6 +480,41 @@ export type Database = {
       is_in_lignee: { Args: { target: string }; Returns: boolean }
       is_moderator: { Args: Record<PropertyKey, never>; Returns: boolean }
       is_service_role: { Args: Record<PropertyKey, never>; Returns: boolean }
+      search_mariages_candidats: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          date_fin: string
+          date_mariage: string
+          id: string
+          personne_1_appellation: string
+          personne_1_id: string
+          personne_1_nom: string
+          personne_1_prenom: string
+          personne_1_sexe: string
+          personne_1_url_img_thumb: string
+          personne_2_appellation: string
+          personne_2_id: string
+          personne_2_nom: string
+          personne_2_prenom: string
+          personne_2_sexe: string
+          personne_2_url_img_thumb: string
+          type_fin: string
+        }[]
+      }
+      search_personnes_candidats: {
+        Args: { p_limit?: number; p_query?: string }
+        Returns: {
+          appellation: string
+          date_deces: string
+          date_naissance: string
+          est_lignee_generale: boolean
+          id: string
+          nom: string
+          prenom: string
+          sexe: string
+          url_img_thumb: string
+        }[]
+      }
       set_user_role: {
         Args: {
           p_email: string

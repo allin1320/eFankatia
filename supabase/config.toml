@@ -65,11 +65,14 @@ enabled = true
 schema_paths = []
 
 [db.seed]
-# If enabled, seeds the database after migrations during a db reset.
-enabled = true
+# Le seed administrateur est géré par `npm run seed:user:admin-create`
+# (scripts/seed-admin.ts),
+# car un fichier SQL ne peut pas lire les variables du .env.
+# `npm run db:reset` enchaîne `db reset` puis ce seed.
+enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+sql_paths = []
 
 [db.network_restrictions]
 # Enable management of network restrictions.

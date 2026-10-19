@@ -34,8 +34,8 @@ npx supabase start
 #    (demande le mot de passe DB du projet)
 npx supabase link --project-ref <project-ref>
 
-# 6. Appliquer les migrations + seed en local (crée les comptes de démo)
-npx supabase db reset
+# 6. Appliquer les migrations + créer l'administrateur en local
+npm run db:reset
 
 # 7. Configurer l'environnement (voir section « Authentification & environnement »)
 cp .env.example .env
@@ -58,6 +58,8 @@ npm run build             # build de production
 npm run lint              # ESLint
 npm run check             # Prettier --check .
 npm run format            # Prettier + ESLint --fix (formatage auto)
+npm run db:reset               # db reset local + seed administrateur
+npm run seed:user:admin-create # crée / met à jour l'administrateur (ADMIN_*)
 ```
 
 ### Test d'upload (imgbb)
@@ -74,12 +76,12 @@ Le schéma est versionné dans `supabase/migrations/`. **Ne jamais modifier le s
 
 ### Services locaux (après `supabase start`)
 
-| Service | URL |
-|---|---|
-| Supabase Studio | http://localhost:54323 |
-| API (PostgREST) | http://localhost:54321 |
-| Base PostgreSQL | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
-| SMTP (test emails) | http://localhost:54324 |
+| Service            | URL                                                       |
+| ------------------ | --------------------------------------------------------- |
+| Supabase Studio    | http://localhost:54323                                    |
+| API (PostgREST)    | http://localhost:54321                                    |
+| Base PostgreSQL    | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
+| SMTP (test emails) | http://localhost:54324                                    |
 
 ### Commandes utiles
 
@@ -109,24 +111,34 @@ L'auth repose sur **Supabase Auth** + **`@supabase/ssr`** : la session est stock
 
 ### Variables d'environnement
 
-| Variable | Description | Où la trouver |
-|---|---|---|
-| `VITE_SUPABASE_URL` | URL de l'API Supabase | `npx supabase status` → **`Project URL`** (local), ou dashboard → *Project Settings → API → Project URL* (cloud) |
-| `VITE_SUPABASE_ANON_KEY` | Clé publique | `npx supabase status` → **`Publishable`** (anciennement `anon`) (local), ou dashboard → *Project Settings → API → publishable/anon* (cloud) |
+| Variable                 | Description                                               | Où la trouver                                                                                                                               |
+| ------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`      | URL de l'API Supabase                                     | `npx supabase status` → **`Project URL`** (local), ou dashboard → _Project Settings → API → Project URL_ (cloud)                            |
+| `VITE_SUPABASE_ANON_KEY` | Clé publique                                              | `npx supabase status` → **`Publishable`** (anciennement `anon`) (local), ou dashboard → _Project Settings → API → publishable/anon_ (cloud) |
+| `ADMIN_EMAIL`            | E-mail du compte administrateur créé par le seed          | À choisir (ex. `admin@efankatia.local`)                                                                                                     |
+| `ADMIN_PASSWORD`         | Mot de passe du compte administrateur (8 caractères min.) | À choisir                                                                                                                                   |
 
 ```bash
-cp .env.example .env   # puis renseigner les 2 variables
+cp .env.example .env   # puis renseigner les variables
 ```
+
+> `ADMIN_EMAIL` et `ADMIN_PASSWORD` sont lus uniquement par le script serveur `scripts/seed-admin.ts`.
+> Ne jamais les préfixer par `VITE_` : une variable `VITE_*` est exposée au navigateur.
 
 > Les **mêmes** variables sont utilisées côté client (`import.meta.env`) et serveur (`process.env`). C'est une clé **publique** : ne jamais exposer la clé **`Secret`** (anciennement `SERVICE_ROLE_KEY`).
 
-### Comptes de démo (seed local)
+### Compte administrateur (seed local)
 
-| Email | Mot de passe | Rôle |
-|---|---|---|
-| `admin@efankatia.local` | `Admin123!` | `ROLE_ADMIN` |
-| `moderateur@efankatia.local` | `Modo123!` | `ROLE_MODERATEUR` |
-| `user@efankatia.local` | `User123!` | `ROLE_USER` |
+Le seed crée un **unique compte `ROLE_ADMIN`** à partir des variables `ADMIN_EMAIL` et `ADMIN_PASSWORD` de `.env` :
+
+```bash
+npm run seed:user:admin-create   # crée le compte, ou met à jour son mot de passe s'il existe
+npm run db:reset                  # remet la base à zéro puis recrée l'administrateur
+```
+
+Le script est **idempotent** : il peut être relancé sans erreur. Un fichier SQL ne pouvant pas lire
+`.env`, le seed est exécuté par `scripts/seed-admin.ts` via la CLI Supabase (`db query --local`) ;
+`[db.seed]` est donc désactivé dans `supabase/config.toml`.
 
 ## Routage
 
@@ -134,12 +146,13 @@ TanStack Router en mode file-based : les routes sont des fichiers dans `src/rout
 
 Structure actuelle :
 
-| Route | Fichier | Rôle |
-|---|---|---|
-| `/` | `src/routes/index.tsx` | Redirige vers `/app` (connecté) ou `/login`. |
-| `/login` | `src/routes/login.tsx` | Connexion (publique). |
-| `/app` | `src/routes/app.tsx` | Layout **protégé** : exige une session, sinon redirige vers `/login`. |
-| `/app/` | `src/routes/app/index.tsx` | Accueil connecté. |
+| Route                     | Fichier                                 | Rôle                                                                  |
+| ------------------------- | --------------------------------------- | --------------------------------------------------------------------- |
+| `/`                       | `src/routes/index.tsx`                  | Redirige vers `/app` (connecté) ou `/login`.                          |
+| `/login`                  | `src/routes/login.tsx`                  | Connexion (publique).                                                 |
+| `/app`                    | `src/routes/app.tsx`                    | Layout **protégé** : exige une session, sinon redirige vers `/login`. |
+| `/app/`                   | `src/routes/app/index.tsx`              | Accueil connecté.                                                     |
+| `/app/personnes/nouvelle` | `src/routes/app/personnes/nouvelle.tsx` | Création d'une personne (`ROLE_ADMIN` / `ROLE_MODERATEUR`).           |
 
 ## Styling
 
