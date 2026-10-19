@@ -47,12 +47,15 @@ Cette table contient toutes les personnes[cite: 1]. Une personne ne doit exister
         pays text,
         ville text,
         quartier text,
+        urlImg text,
         estLigneeGenerale boolean DEFAULT true,
         created_at timestamptz DEFAULT now(),
         updated_at timestamptz DEFAULT now(),
         user_created uuid REFERENCES auth.users(id),
         user_edited uuid REFERENCES auth.users(id)
     );
+
+**Photo** : `urlImg` stocke l'URL publique de la photo de profil, hébergée via l'API **imgbb** (voir Phase 4). Nullable : une personne peut ne pas avoir de photo (l'UI affiche alors la première lettre de l'appellation en majuscule).
 
 **Champs d'audit** : `created_at` / `user_created` sont renseignés à la création de la personne, et `updated_at` / `user_edited` à chaque modification. `user_created` et `user_edited` référencent l'utilisateur authentifié (`auth.users.id`) ayant effectué l'action.
 
