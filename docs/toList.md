@@ -78,9 +78,15 @@
 
 ## Phase 8 : Arbre Généalogique Interactif (UX / UI)
 
-- [ ] **P8.1** Créer la vue de l'arbre généalogique accessible depuis n'importe quelle fiche personne.
-- [ ] **P8.2** Intégrer le rendu visuel des cartes (miniature photo ou première lettre de l'appellation en majuscule).
-- [ ] **P8.3** Implémenter le zoom (zoom-in / zoom-out) et le déplacement fluide (pan / drag).
+- [x] **P8.1** Créer la vue de l'arbre généalogique accessible depuis n'importe quelle fiche personne.
+  - [x] **P8.1.1** RPC `get_arbre_personne(p_id, p_ancetres, p_descendants)` : ascendants, descendants, conjoints et liens en une requête.
+  - [x] **P8.1.2** Route `/app/arbre` : racine familiale par défaut (RPC `get_personne_racine`) ou `?personne=<id>` depuis une fiche.
+- [x] **P8.2** Intégrer le rendu visuel des cartes (miniature photo ou première lettre de l'appellation en majuscule).
+  - [x] **P8.2.1** `PersonAvatar` réutilisé (`urlImgThumb` → repli initiale de l'appellation).
+  - [x] **P8.2.2** Mise en page par générations, lignes d'union et courbes de filiation.
+- [x] **P8.3** Implémenter le zoom (zoom-in / zoom-out) et le déplacement fluide (pan / drag).
+  - [x] **P8.3.1** Molette, boutons, pincement tactile et raccourcis clavier (+/−/0/flèches).
+  - [x] **P8.3.2** Recadrage automatique et bouton « Recentrer » ; dépliage des branches par boutons « + » directement dans l'arbre (3 générations par défaut).
 
 ## Phase 9 : Tests, Sécurité et Déploiement
 

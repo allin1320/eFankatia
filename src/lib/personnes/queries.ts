@@ -8,6 +8,8 @@ import {
 import { getSupabaseBrowserClient } from '../supabase/client'
 import { mariageKeys, personneKeys, searchKeys } from '../supabase/query-keys'
 import type { PersonneFiche, SearchPersonne } from './fiche-types'
+import type { ArbrePersonneData } from './tree-types'
+import { ARBRE_FETCH_DEPTH } from './tree-types'
 import type {
   MariageCandidat,
   PersonneCandidat,
@@ -171,6 +173,41 @@ export function personneFicheQueryOptions(id: string) {
   })
 }
 
+/** Arbre généalogique centré sur une personne (arbre complet, borné en base). */
+export function arbrePersonneQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: personneKeys.arbre(id),
+    queryFn: async (): Promise<ArbrePersonneData | null> => {
+      const supabase = getSupabaseBrowserClient()
+      const { data, error } = await supabase.rpc('get_arbre_personne', {
+        p_id: id,
+        p_ancetres: ARBRE_FETCH_DEPTH,
+        p_descendants: ARBRE_FETCH_DEPTH,
+      })
+      if (error) throw error
+      return (data as ArbrePersonneData | null) ?? null
+    },
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** Personne racine affichée par défaut quand aucune fiche n'est choisie. */
+export function personneRacineQueryOptions() {
+  return queryOptions({
+    queryKey: personneKeys.racine(),
+    queryFn: async (): Promise<string | null> => {
+      const supabase = getSupabaseBrowserClient()
+      const { data, error } = await supabase.rpc('get_personne_racine')
+      if (error) throw error
+      // La RPC peut renvoyer `null` (aucune personne) : `null` est traité
+      // comme « pas de racine » par l'appelant.
+      return data
+    },
+    staleTime: 300_000,
+  })
+}
+
 /** Hook : personnes candidates, activé à l'ouverture du combobox. */
 export function usePersonnesCandidats(query: string, enabled = true) {
   return useQuery({ ...personnesCandidatsQueryOptions(query), enabled })
@@ -212,6 +249,19 @@ export function usePersonneFiche(id: string | null | undefined) {
     ...personneFicheQueryOptions(id ?? ''),
     enabled: Boolean(id),
   })
+}
+
+/** Hook : arbre généalogique centré sur une personne. */
+export function useArbrePersonne(id: string | null | undefined) {
+  return useQuery({
+    ...arbrePersonneQueryOptions(id ?? ''),
+    enabled: Boolean(id),
+  })
+}
+
+/** Hook : personne racine de l'arbre familial. */
+export function usePersonneRacine() {
+  return useQuery(personneRacineQueryOptions())
 }
 
 const SEARCH_PAGE_SIZE = 30

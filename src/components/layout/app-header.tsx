@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Search, TreeDeciduous } from 'lucide-react'
+import { Network, Search, TreeDeciduous } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
 import { ThemeToggle } from './theme-toggle'
@@ -27,6 +27,17 @@ export function AppHeader() {
         </Link>
 
         <div className="flex items-center gap-1">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="size-11 sm:size-9"
+          >
+            <Link to="/app/arbre" search={{}}>
+              <Network />
+              <span className="sr-only">Arbre généalogique</span>
+            </Link>
+          </Button>
           <Button
             asChild
             variant="ghost"

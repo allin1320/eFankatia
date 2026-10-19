@@ -10,21 +10,6 @@ export const Route = createFileRoute('/app/')({
   component: Dashboard,
 })
 
-const FEATURES = [
-  {
-    icon: Search,
-    title: 'Recherche',
-    description: 'Retrouvez un membre par nom, prénom ou profession.',
-    available: true,
-  },
-  {
-    icon: Network,
-    title: 'Arbre généalogique',
-    description: 'Explorez l’arbre de manière interactive et fluide.',
-    available: false,
-  },
-] as const
-
 function Dashboard() {
   const { user, role, isAdmin, isModerator } = useAuth()
   const canCreate = isAdmin || isModerator
@@ -56,28 +41,40 @@ function Dashboard() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURES.map(({ icon: Icon, title, description, available }) => (
-          <article key={title} className="feature-card rounded-2xl p-6">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--sand)] text-[var(--palm)]">
-              <Icon className="size-5" />
-            </span>
-            <h2 className="mt-4 text-base font-semibold text-[var(--sea-ink)]">
-              {title}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-            {available ? (
-              <Button asChild variant="outline" size="sm" className="mt-4">
-                <Link to="/app/recherche" search={{ q: '', notice: undefined }}>
-                  Rechercher
-                </Link>
-              </Button>
-            ) : (
-              <Badge variant="outline" className="mt-4">
-                Bientôt disponible
-              </Badge>
-            )}
-          </article>
-        ))}
+        <article className="feature-card rounded-2xl p-6">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--sand)] text-[var(--palm)]">
+            <Search className="size-5" />
+          </span>
+          <h2 className="mt-4 text-base font-semibold text-[var(--sea-ink)]">
+            Recherche
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Retrouvez un membre par nom, prénom ou profession.
+          </p>
+          <Button asChild variant="outline" size="sm" className="mt-4">
+            <Link to="/app/recherche" search={{ q: '', notice: undefined }}>
+              Rechercher
+            </Link>
+          </Button>
+        </article>
+
+        <article className="feature-card rounded-2xl p-6">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--sand)] text-[var(--palm)]">
+            <Network className="size-5" />
+          </span>
+          <h2 className="mt-4 text-base font-semibold text-[var(--sea-ink)]">
+            Arbre généalogique
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Explorez l’arbre de manière interactive et fluide, zoom et
+            déplacement compris.
+          </p>
+          <Button asChild variant="outline" size="sm" className="mt-4">
+            <Link to="/app/arbre" search={{}}>
+              Explorer
+            </Link>
+          </Button>
+        </article>
 
         <article className="feature-card rounded-2xl p-6">
           <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--sand)] text-[var(--palm)]">

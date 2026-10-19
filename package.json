@@ -14,6 +14,7 @@
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check .",
     "seed:user:admin-create": "tsx --env-file=.env scripts/seed-admin.ts",
+    "seed:personne:test": "tsx scripts/seed-personnes-test.ts",
     "db:reset": "supabase db reset --no-seed && npm run seed:user:admin-create",
     "test:upload": "tsx --env-file=.env scripts/test-upload.ts"
   },

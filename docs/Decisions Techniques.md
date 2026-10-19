@@ -6,16 +6,17 @@ les règles transverses à respecter dans le code et les migrations.
 
 ## Index par phase
 
-| Phase                      | Document de détail                                                                                 | Statut      | Sujets principaux                                                                         |
-| -------------------------- | -------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------- |
-| P1 — Base de données       | [`decision technique/phase1-db.md`](decision%20technique/phase1-db.md)                             | ✅ terminée | Règles `ON DELETE`, contraintes, outillage Supabase CLI                                   |
-| P2 — Auth, rôles et RLS    | _(décisions dans les migrations `*_auth_helpers`, `*_lignee_helper`, `*_enable_rls_and_policies`)_ | ✅ terminée | Politiques RLS, helpers `is_admin` / `is_moderator` / `is_in_lignee`, création via RPC    |
-| P3 — Frontend TanStack     | [`decision technique/phase3-frontend.md`](decision%20technique/phase3-frontend.md)                 | ✅ terminée | Auth SSR par cookies, protection des routes, env, formulaires, UI                         |
-| P4 — Photos imgbb          | [`decision technique/phase4-imgbb.md`](decision%20technique/phase4-imgbb.md)                       | ✅ terminée | Upload serveur, `urlImg` / `urlImgThumb`, script de test                                  |
-| P5 — Création de personnes | [`decision technique/phase5-personnes.md`](decision%20technique/phase5-personnes.md)               | ✅ terminée | Formulaire, rattachements, anti-doublon, RPC de candidats                                 |
-| P6 — Fiche et actions      | [`decision technique/phase6-personnes.md`](decision%20technique/phase6-personnes.md)               | ✅ terminée | `get_personne_fiche`, modification, suppression transactionnelle, unions, actions rapides |
-| P7 — Recherche             | [`decision technique/phase7-recherche.md`](decision%20technique/phase7-recherche.md)               | ✅ terminée | `search_personnes`, `pg_trgm`, `immutable_unaccent`, pagination, état d'URL               |
-| P8 → P9                    | [`toList.md`](toList.md)                                                                           | ⏳ à venir  | Arbre interactif, tests et déploiement                                                    |
+| Phase                      | Document de détail                                                                                 | Statut      | Sujets principaux                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
+| P1 — Base de données       | [`decision technique/phase1-db.md`](decision%20technique/phase1-db.md)                             | ✅ terminée | Règles `ON DELETE`, contraintes, outillage Supabase CLI                                           |
+| P2 — Auth, rôles et RLS    | _(décisions dans les migrations `*_auth_helpers`, `*_lignee_helper`, `*_enable_rls_and_policies`)_ | ✅ terminée | Politiques RLS, helpers `is_admin` / `is_moderator` / `is_in_lignee`, création via RPC            |
+| P3 — Frontend TanStack     | [`decision technique/phase3-frontend.md`](decision%20technique/phase3-frontend.md)                 | ✅ terminée | Auth SSR par cookies, protection des routes, env, formulaires, UI                                 |
+| P4 — Photos imgbb          | [`decision technique/phase4-imgbb.md`](decision%20technique/phase4-imgbb.md)                       | ✅ terminée | Upload serveur, `urlImg` / `urlImgThumb`, script de test                                          |
+| P5 — Création de personnes | [`decision technique/phase5-personnes.md`](decision%20technique/phase5-personnes.md)               | ✅ terminée | Formulaire, rattachements, anti-doublon, RPC de candidats                                         |
+| P6 — Fiche et actions      | [`decision technique/phase6-personnes.md`](decision%20technique/phase6-personnes.md)               | ✅ terminée | `get_personne_fiche`, modification, suppression transactionnelle, unions, actions rapides         |
+| P7 — Recherche             | [`decision technique/phase7-recherche.md`](decision%20technique/phase7-recherche.md)               | ✅ terminée | `search_personnes`, `pg_trgm`, `immutable_unaccent`, pagination, état d'URL                       |
+| P8 — Arbre interactif      | [`decision technique/phase8-arbre.md`](decision%20technique/phase8-arbre.md)                       | ✅ terminée | `get_arbre_personne`, `get_personne_racine`, placement par générations, boutons « + », zoom / pan |
+| P9 — Tests & déploiement   | [`toList.md`](toList.md)                                                                           | ⏳ à venir  | Validation par rôle, cas complexes, déploiement                                                   |
 
 ## Règles de suppression (clés étrangères)
 
