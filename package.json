@@ -18,6 +18,8 @@
     "check": "prettier --check .",
     "seed:user:admin-create": "tsx --env-file=.env scripts/seed-admin.ts",
     "seed:personne:test": "tsx scripts/seed-personnes-test.ts",
+    "seed:user:admin-create:cloud": "SUPABASE_DB_TARGET=linked tsx --env-file=.env scripts/seed-admin.ts",
+    "seed:personne:test:cloud": "SUPABASE_DB_TARGET=linked tsx scripts/seed-personnes-test.ts",
     "db:reset": "supabase db reset --no-seed && npm run seed:user:admin-create",
     "test:upload": "tsx --env-file=.env scripts/test-upload.ts"
   },

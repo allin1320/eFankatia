@@ -1,7 +1,6 @@
-import { execFileSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+
+import { resolveSeedDbTarget, runSeedQuery } from './lib/db-target'
 
 const MIN_PASSWORD_LENGTH = 8
 const ADMIN_ROLE = 'ROLE_ADMIN'
@@ -161,35 +160,18 @@ ${dollarTag};
 `.trimStart()
 }
 
-function runSeed(sql: string): void {
-  const projectRoot = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '..',
-  )
-  const cliPath = path.join(
-    projectRoot,
-    'node_modules',
-    'supabase',
-    'dist',
-    'supabase.js',
-  )
-
-  // Le SQL est passé sur stdin : les identifiants ne touchent jamais le disque.
-  execFileSync(process.execPath, [cliPath, 'db', 'query', '--local'], {
-    input: sql,
-    stdio: ['pipe', 'inherit', 'inherit'],
-  })
-}
-
 async function main(): Promise<void> {
   const email = readRequiredEnv('ADMIN_EMAIL').trim()
   const password = readRequiredEnv('ADMIN_PASSWORD')
+  const target = resolveSeedDbTarget()
 
   validateEmail(email)
   validatePassword(password)
 
-  console.log(`🌱 Création / mise à jour de l'administrateur ${email}…`)
-  runSeed(buildSeedSql(email, password))
+  console.log(
+    `🌱 Création / mise à jour de l'administrateur ${email} (cible : ${target})…`,
+  )
+  runSeedQuery(buildSeedSql(email, password))
   console.log(`✅ Administrateur prêt (${ADMIN_ROLE}).`)
 }
 
