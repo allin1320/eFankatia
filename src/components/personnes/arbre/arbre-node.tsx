@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { StarIcon } from 'lucide-react'
+import { CrossIcon, StarIcon } from 'lucide-react'
 import { cn } from 'cn'
 
 import { PersonAvatar } from '../person-avatar'
@@ -72,6 +72,17 @@ export function ArbreNode({ personne, isFocus, x, y }: ArbreNodeProps) {
 
       {isFocus ? (
         <span className="sr-only">Personne affichée au centre</span>
+      ) : null}
+
+      {personne.date_deces ? (
+        <span
+          className="absolute right-1.5 bottom-1.5 flex items-center justify-center text-muted-foreground/80"
+          role="img"
+          aria-label="Décédé(e)"
+          title="Décédé(e)"
+        >
+          <CrossIcon className="size-3" aria-hidden="true" strokeWidth={2.5} />
+        </span>
       ) : null}
     </Link>
   )

@@ -209,8 +209,22 @@ export function buildTreeVisibility(
   }
 
   // Lignée de sang : focus + ascendants/descendants via parent_enfants.
-  const lineage = new Set<string>([source.focus_id])
-  const lineageQueue = [source.focus_id]
+  // Une personne arrivée par alliance n'a pas de parent : on part alors aussi
+  // de ses conjoints, comme la RPC, pour que les boutons de branche couvrent
+  // la lignée affichée (celle du conjoint).
+  const lineageRoots = [source.focus_id]
+  if ((parentsOf.get(source.focus_id) ?? []).length === 0) {
+    for (const mariage of source.mariages) {
+      if (mariage.personne_1_id === source.focus_id) {
+        lineageRoots.push(mariage.personne_2_id)
+      } else if (mariage.personne_2_id === source.focus_id) {
+        lineageRoots.push(mariage.personne_1_id)
+      }
+    }
+  }
+
+  const lineage = new Set<string>(lineageRoots)
+  const lineageQueue = [...lineageRoots]
   for (const id of lineageQueue) {
     for (const parent of parentsOf.get(id) ?? []) {
       if (lineage.has(parent) || !generationById.has(parent)) continue

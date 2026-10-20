@@ -10,6 +10,11 @@ Registre des choix pris pendant la Phase 8.
     REST côté client ;
   - ascendants via un CTE récursif `parent_enfants` (profondeur négative),
     descendants via le même graphe (profondeur positive) ;
+  - **racines du parcours** : la personne focalisée, **plus ses conjoints
+    lorsqu'elle n'a aucun parent**. Une personne arrivée par alliance
+    (`create_personne_par_mariage`) affiche ainsi la lignée complète de son
+    conjoint au lieu d'un couple isolé ; sa génération reste 0. Pour une
+    personne de la lignée (avec ascendants), le comportement est inchangé ;
   - profondeur bornée à **0..6** générations de chaque côté. Le client charge
     l'arbre complet (6 + 6) puis n'en affiche qu'une partie : la progression se
     fait côté UI ;
@@ -49,6 +54,10 @@ Registre des choix pris pendant la Phase 8.
     - au milieu de chaque union (entre les deux conjoints) pour déplier /
       replier les enfants du couple ;
     - sous chaque parent seul pour déplier / replier ses enfants hors union ;
+  - la **lignée affichable** part de la personne focalisée **et, si elle n'a
+    aucun parent (alliance), de ses conjoints** : la lignée du conjoint reçoit
+    elle aussi ses boutons de branche, en cohérence avec les nœuds renvoyés par
+    la RPC ;
   - « + » indique une branche repliée à afficher, « − » une branche affichée à
     réduire ;
   - un clic agit **sur cette branche uniquement**, sans recharger la donnée ;
@@ -57,10 +66,26 @@ Registre des choix pris pendant la Phase 8.
     « Réduire l’arbre » (icône rotation) revient à l'état par défaut.
 - **Mise en page** (`src/lib/personnes/tree-layout.ts`) :
   - une ligne par génération (`generation * ROW_GAP`) ;
+  - **blocs de conjoints** : les personnes mariées d'une même génération sont
+    soudées (union-find) et restent toujours **côte à côte**, dans l'ordre de
+    leurs alliances successives (A‑B, B‑C → `A B C`) ; aucune autre carte ne peut
+    s'intercaler entre deux conjoints, même après les passes de barycentre ;
   - placement horizontal par passes de **barycentre** (conjoints, parents,
-    enfants) avec espacement minimal garanti, puis translation pour centrer la
-    personne focalisée ;
-  - liaison d'union (ligne pointillée + pastille avec la date en infobulle) ;
+    enfants) sur des blocs insécables : chaque bloc cible la moyenne des
+    barycentres de ses membres, avec un espacement resserré au sein d'un couple
+    (`COUPLE_GAP`) et élargi entre deux familles (`BLOCK_GAP`), puis translation
+    pour centrer la personne focalisée ;
+  - **alignement vertical des filiations** : après le barycentre, chaque rangée
+    est replacée du haut vers le bas pour que la carte d'un enfant soit
+    exactement sous le milieu de l'union de ses parents (ou sous le parent
+    seul). Les fratries restent des groupes rigides centrés sous l'union
+    parentale, donc une chaîne à enfant unique forme une filiation verticale ;
+    les personnes sans parent conservent la position du barycentre ;
+  - liaison d'union (ligne pointillée + pastille avec la date en infobulle) :
+    trait droit si les conjoints sont voisins, **détour sous la rangée** si une
+    carte s'intercale malgré tout (cas d'alliances croisées), courbe en S entre
+    les rangées pour un couple inter-générations — la ligne ne traverse jamais
+    une carte ;
   - enfants rattachés à une union : **une seule courbe** depuis le milieu du
     couple ; les liens parent/enfant hors union restent des courbes directes ;
   - coordonnées **stables** (espace monde brut) : le dépliage d'une branche ne

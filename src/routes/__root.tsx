@@ -38,7 +38,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           'Application familiale pour retracer l’histoire de la famille et explorer l’arbre généalogique.',
       },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+      { rel: 'apple-touch-icon', href: '/favicon.png' },
+      { rel: 'stylesheet', href: appCss },
+    ],
     // Injecté dans le <head> par le routeur (évite le warning React sur les
     // balises <script> rendues dans un composant).
     scripts: [{ children: themeInitScript }],
