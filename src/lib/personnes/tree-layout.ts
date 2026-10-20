@@ -2,11 +2,15 @@
  * Calcul de la disposition de l'arbre généalogique.
  *
  * L'algorithme est un placement en couches (une génération = une ligne) :
- *  1. chaque personne est placée sur la ligne de sa génération ;
- *  2. les positions horizontales sont affinées par plusieurs passes de
- *     barycentre (conjoints, parents, enfants) afin de rapprocher les familles
- *     et de limiter les croisements ;
- *  3. un espacement minimal est garanti entre les cartes.
+ *  1. les conjoints d'une même génération sont regroupés en **blocs
+ *     insécables** : ils restent toujours côte à côte, dans l'ordre de leurs
+ *     alliances successives ;
+ *  2. chaque bloc est placé sur la ligne de sa génération, puis les positions
+ *     horizontales sont affinées par plusieurs passes de barycentre
+ *     (conjoints, parents, enfants) afin de rapprocher les familles et de
+ *     limiter les croisements ;
+ *  3. un espacement minimal est garanti entre les cartes (resserré au sein d'un
+ *     couple, élargi entre deux familles).
  *
  * Les coordonnées sont exprimées dans l'espace « monde » : `x`/`y` correspondent
  * au coin supérieur gauche d'une carte. La génération 0 (personne focalisée)
@@ -19,8 +23,10 @@ import type { ArbrePersonneData } from './tree-types'
 /** Dimensions d'une carte personne. */
 export const CARD_WIDTH = 176
 export const CARD_HEIGHT = 100
-/** Espace horizontal minimal entre deux cartes d'une même génération. */
-export const COLUMN_GAP = 36
+/** Espace horizontal entre les deux cartes d'un couple (ligne d'union). */
+export const COUPLE_GAP = 36
+/** Espace horizontal entre deux familles d'une même génération. */
+export const BLOCK_GAP = 64
 /** Distance verticale entre deux générations. */
 export const ROW_GAP = 172
 /** Marge ajoutée autour de l'arbre. */
@@ -28,10 +34,16 @@ export const LAYOUT_PADDING = 140
 
 /** Barycentre : nombre de passes d'affinage. */
 const LAYOUT_ITERATIONS = 150
+/** Alignement vertical : nombre de passes de relaxation par rangée. */
+const ALIGNMENT_ITERATIONS = 60
 /** Poids d'attraction d'un conjoint (rapproche les couples). */
 const SPOUSE_WEIGHT = 3
 /** Poids d'attraction vers la génération 0 pour la personne focalisée. */
 const FOCUS_WEIGHT = 4
+/** Amplitude du détour d'une ligne d'union qui croiserait des cartes. */
+const UNION_DETOUR = 30
+/** Rayon des angles du détour d'une ligne d'union. */
+const UNION_DETOUR_RADIUS = 38
 
 export type TreeNode = {
   id: string
@@ -59,8 +71,12 @@ export type TreeUnionLink = {
 export type TreeMarriageLine = {
   mariageId: string
   path: string
+  /** Point d'ancrage de la pastille / du bouton d'union. */
   midX: number
   midY: number
+  /** Point de départ des liens vers les enfants de l'union. */
+  childX: number
+  childY: number
   /** Libellé accessible de l'union. */
   label: string
 }
@@ -108,8 +124,162 @@ function verticalPath(
   return `M ${round(fromX)} ${round(fromY)} C ${round(fromX)} ${round(fromY + dy)}, ${round(toX)} ${round(toY - dy)}, ${round(toX)} ${round(toY)}`
 }
 
+/** Un bloc insécable de conjoints sur une même génération. */
+type FamilyBlock = {
+  /** Identifiant stable (membre le plus ancien dans les données). */
+  key: string
+  /** Identifiants dans l'ordre d'affichage : les conjoints se suivent. */
+  ids: string[]
+  /** Largeur totale du bloc (cartes + espacements internes). */
+  width: number
+  /** Ordre initial, utilisé pour départager deux cibles identiques. */
+  sortIndex: number
+  /** Centre horizontal visé par le barycentre. */
+  targetX: number
+}
+
+/**
+ * Ordonne les membres d'un bloc pour que chaque conjoint soit voisin du
+ * suivant : on parcourt les chaînes d'alliances en partant des extrémités,
+ * puis on rattache les éventuels membres isolés.
+ */
+function orderSpouseChain(
+  ids: string[],
+  spouseIds: Map<string, string[]>,
+  sourceOrder: Map<string, number>,
+): string[] {
+  if (ids.length <= 2) return ids
+
+  const members = new Set(ids)
+  const linkCount = (id: string) =>
+    (spouseIds.get(id) ?? []).filter((other) => members.has(other)).length
+
+  const visited = new Set<string>()
+  const ordered: string[] = []
+  const starts = [...ids].sort(
+    (a, b) =>
+      linkCount(a) - linkCount(b) || sourceOrder.get(a)! - sourceOrder.get(b)!,
+  )
+
+  for (const start of starts) {
+    if (visited.has(start)) continue
+    let current = start
+    visited.add(current)
+    ordered.push(current)
+
+    for (;;) {
+      const next = (spouseIds.get(current) ?? []).find(
+        (other) => members.has(other) && !visited.has(other),
+      )
+      if (!next) break
+      visited.add(next)
+      ordered.push(next)
+      current = next
+    }
+  }
+
+  return ordered
+}
+
 function round(value: number): number {
   return Math.round(value * 100) / 100
+}
+
+/** Une carte (hors conjoints) coupe-t-elle le segment horizontal donné ? */
+function crossesCard(
+  nodes: TreeNode[],
+  excluded: ReadonlySet<string>,
+  y: number,
+  startX: number,
+  endX: number,
+): boolean {
+  const lo = Math.min(startX, endX)
+  const hi = Math.max(startX, endX)
+  return nodes.some(
+    (node) =>
+      !excluded.has(node.id) &&
+      node.x < hi &&
+      node.x + CARD_WIDTH > lo &&
+      y > node.y &&
+      y < node.y + CARD_HEIGHT,
+  )
+}
+
+type UnionGeometry = {
+  path: string
+  /** Pastille / bouton d'union. */
+  midX: number
+  midY: number
+  /** Départ des liens vers les enfants de l'union. */
+  childX: number
+  childY: number
+}
+
+/**
+ * Tracé de la ligne d'union. Deux conjoints d'une même génération sont
+ * normalement voisins : un simple trait suffit. Si des cartes s'intercalent
+ * malgré tout, la ligne contourne la rangée par le bas ; si les conjoints sont
+ * sur deux générations, la courbe passe par le couloir entre les rangées.
+ */
+function unionGeometry(
+  first: TreeNode,
+  second: TreeNode,
+  nodes: TreeNode[],
+): UnionGeometry {
+  if (first.generation === second.generation) {
+    const [left, right] =
+      first.x <= second.x ? [first, second] : [second, first]
+    const lineY = left.y + CARD_HEIGHT / 2
+    const startX = left.x + CARD_WIDTH
+    const endX = right.x
+    const midX = (startX + endX) / 2
+
+    if (
+      !crossesCard(nodes, new Set([left.id, right.id]), lineY, startX, endX)
+    ) {
+      return {
+        path: `M ${round(startX)} ${round(lineY)} L ${round(endX)} ${round(lineY)}`,
+        midX,
+        midY: lineY,
+        childX: midX,
+        childY: lineY,
+      }
+    }
+
+    // Contournement sous la rangée, pour ne jamais traverser une carte.
+    const detourY = left.y + CARD_HEIGHT + UNION_DETOUR
+    const radius = Math.max(
+      8,
+      Math.min(UNION_DETOUR_RADIUS, (endX - startX) / 4),
+    )
+    return {
+      path: [
+        `M ${round(startX)} ${round(lineY)}`,
+        `C ${round(startX + radius)} ${round(lineY)}, ${round(startX + radius)} ${round(detourY)}, ${round(startX + 2 * radius)} ${round(detourY)}`,
+        `L ${round(endX - 2 * radius)} ${round(detourY)}`,
+        `C ${round(endX - radius)} ${round(detourY)}, ${round(endX - radius)} ${round(lineY)}, ${round(endX)} ${round(lineY)}`,
+      ].join(' '),
+      midX,
+      midY: detourY,
+      childX: midX,
+      childY: detourY,
+    }
+  }
+
+  // Conjoints sur deux générations : courbe en S entre les deux rangées.
+  const [upper, lower] = first.y <= second.y ? [first, second] : [second, first]
+  const startX = upper.x + CARD_WIDTH / 2
+  const startY = upper.y + CARD_HEIGHT
+  const endX = lower.x + CARD_WIDTH / 2
+  const endY = lower.y
+  const dy = Math.max(24, (endY - startY) * 0.55)
+  return {
+    path: `M ${round(startX)} ${round(startY)} C ${round(startX)} ${round(startY + dy)}, ${round(endX)} ${round(endY - dy)}, ${round(endX)} ${round(endY)}`,
+    midX: (startX + endX) / 2,
+    midY: (startY + endY) / 2,
+    childX: endX,
+    childY: endY,
+  }
 }
 
 export function computeTreeLayout(data: ArbrePersonneData): TreeLayout {
@@ -122,6 +292,8 @@ export function computeTreeLayout(data: ArbrePersonneData): TreeLayout {
   if (personnes.length === 0) return EMPTY_LAYOUT
 
   const nodeIds = new Set(personnes.map((p) => p.id))
+  const personById = new Map(personnes.map((p) => [p.id, p]))
+  const sourceOrder = new Map(personnes.map((p, index) => [p.id, index]))
 
   // Index des voisinages.
   const spouses = new Map<string, string[]>()
@@ -143,14 +315,42 @@ export function computeTreeLayout(data: ArbrePersonneData): TreeLayout {
     pushTo(parentsOf, lien.enfant_id, lien.parent_id)
   }
 
-  // Regroupement par génération.
+  // Alliances au sein d'une même génération : elles forment des blocs
+  // insécables pour que deux conjoints ne soient jamais séparés par des tiers.
+  const sameGenerationSpouses = new Map<string, string[]>()
+  const blockRoot = new Map<string, string>()
+  const findRoot = (id: string): string => {
+    let root = id
+    for (;;) {
+      const parent = blockRoot.get(root)
+      if (parent === undefined || parent === root) break
+      root = parent
+    }
+    let cursor = id
+    while (cursor !== root) {
+      const next = blockRoot.get(cursor) ?? root
+      blockRoot.set(cursor, root)
+      cursor = next
+    }
+    return root
+  }
+  for (const mariage of mariages) {
+    const first = personById.get(mariage.personne_1_id)
+    const second = personById.get(mariage.personne_2_id)
+    if (!first || !second || first.generation !== second.generation) continue
+    pushTo(sameGenerationSpouses, first.id, second.id)
+    pushTo(sameGenerationSpouses, second.id, first.id)
+    const rootA = findRoot(first.id)
+    const rootB = findRoot(second.id)
+    if (rootA !== rootB) blockRoot.set(rootA, rootB)
+  }
+
+  // Regroupement par génération, puis en blocs de conjoints.
   const byGeneration = new Map<number, string[]>()
   for (const personne of personnes) {
     pushTo(byGeneration, personne.generation, personne.id)
   }
   const generations = [...byGeneration.keys()].sort((a, b) => a - b)
-  const personById = new Map(personnes.map((p) => [p.id, p]))
-  const sourceOrder = new Map(personnes.map((p, index) => [p.id, index]))
 
   // Ordre initial : alphabétique dans chaque génération.
   const order = new Map<number, string[]>()
@@ -167,22 +367,67 @@ export function computeTreeLayout(data: ArbrePersonneData): TreeLayout {
     order.set(generation, list)
   }
 
-  // Position initiale : répartition régulière centrée sur 0.
-  const positions = new Map<string, number>()
-  const minGap = CARD_WIDTH + COLUMN_GAP
+  const blocksByGeneration = new Map<number, FamilyBlock[]>()
   for (const generation of generations) {
-    const list = order.get(generation)!
-    const total = list.length * CARD_WIDTH + (list.length - 1) * COLUMN_GAP
+    const groups = new Map<string, string[]>()
+    for (const id of order.get(generation)!) {
+      pushTo(groups, findRoot(id), id)
+    }
+
+    const blocks: FamilyBlock[] = []
+    for (const ids of groups.values()) {
+      const orderedIds = orderSpouseChain(
+        ids,
+        sameGenerationSpouses,
+        sourceOrder,
+      )
+      const key = [...orderedIds].sort(
+        (a, b) => sourceOrder.get(a)! - sourceOrder.get(b)!,
+      )[0]
+      blocks.push({
+        key,
+        ids: orderedIds,
+        width:
+          orderedIds.length * CARD_WIDTH + (orderedIds.length - 1) * COUPLE_GAP,
+        sortIndex: blocks.length,
+        targetX: 0,
+      })
+    }
+    blocksByGeneration.set(generation, blocks)
+  }
+
+  // Position initiale : blocs répartis régulièrement et centrés sur 0.
+  const blockX = new Map<string, number>()
+  for (const generation of generations) {
+    const blocks = blocksByGeneration.get(generation)!
+    const total =
+      blocks.reduce((sum, block) => sum + block.width, 0) +
+      Math.max(0, blocks.length - 1) * BLOCK_GAP
     let cursor = -total / 2
-    for (const id of list) {
-      positions.set(id, cursor)
-      cursor += minGap
+    for (const block of blocks) {
+      blockX.set(block.key, cursor)
+      cursor += block.width + BLOCK_GAP
     }
   }
 
+  /** Recalcule la position de chaque carte à partir de son bloc. */
+  const positions = new Map<string, number>()
+  const applyBlockPositions = () => {
+    for (const generation of generations) {
+      for (const block of blocksByGeneration.get(generation)!) {
+        let cursor = blockX.get(block.key)!
+        for (const id of block.ids) {
+          positions.set(id, cursor)
+          cursor += CARD_WIDTH + COUPLE_GAP
+        }
+      }
+    }
+  }
+  applyBlockPositions()
+
   const targets = new Map<string, number>()
   for (let iteration = 0; iteration < LAYOUT_ITERATIONS; iteration += 1) {
-    // Barycentre de chaque nœud à partir de ses voisins.
+    // Barycentre de chaque carte à partir de ses voisins.
     for (const generation of generations) {
       for (const id of order.get(generation)!) {
         let sum = 0
@@ -208,49 +453,224 @@ export function computeTreeLayout(data: ArbrePersonneData): TreeLayout {
       }
     }
 
-    // Réordonnancement par barycentre (tri stable).
     for (const generation of generations) {
-      const list = order.get(generation)!
-      list.sort(
-        (a, b) =>
-          targets.get(a)! - targets.get(b)! ||
-          sourceOrder.get(a)! - sourceOrder.get(b)!,
-      )
-    }
+      const blocks = blocksByGeneration.get(generation)!
 
-    // Relaxation avec espacement minimal et amortissement.
-    for (const generation of generations) {
-      const list = order.get(generation)!
-      const xs: number[] = []
-      for (const id of list) {
-        const current = positions.get(id)!
-        const target = targets.get(id)! - CARD_WIDTH / 2
-        xs.push(current + (target - current) * 0.5)
+      // Cible d'un bloc : moyenne des cibles de ses membres.
+      for (const block of blocks) {
+        block.targetX =
+          block.ids.reduce((sum, id) => sum + targets.get(id)!, 0) /
+          block.ids.length
       }
+
+      // Réordonnancement des blocs par barycentre (tri stable).
+      blocks.sort((a, b) => a.targetX - b.targetX || a.sortIndex - b.sortIndex)
+
+      // Relaxation : blocs insécables, espacement garanti entre familles.
+      const xs = blocks.map((block) => {
+        const current = blockX.get(block.key)!
+        const target = block.targetX - block.width / 2
+        return current + (target - current) * 0.5
+      })
 
       for (let i = 1; i < xs.length; i += 1) {
-        xs[i] = Math.max(xs[i], xs[i - 1] + minGap)
+        xs[i] = Math.max(xs[i], xs[i - 1] + blocks[i - 1].width + BLOCK_GAP)
       }
       for (let i = xs.length - 2; i >= 0; i -= 1) {
-        xs[i] = Math.min(xs[i], xs[i + 1] - minGap)
+        xs[i] = Math.min(xs[i], xs[i + 1] - blocks[i].width - BLOCK_GAP)
       }
 
       // Recentre la ligne sur la cible moyenne pour éviter une dérive globale.
       if (xs.length > 0) {
         const meanX = xs.reduce((sum, value) => sum + value, 0) / xs.length
         const meanTarget =
-          list.reduce(
-            (sum, id) => sum + (targets.get(id)! - CARD_WIDTH / 2),
+          blocks.reduce(
+            (sum, block) => sum + block.targetX - block.width / 2,
             0,
-          ) / list.length
+          ) / blocks.length
         const shift = meanTarget - meanX
         for (let i = 0; i < xs.length; i += 1) xs[i] += shift
       }
 
-      for (let i = 0; i < list.length; i += 1) {
-        positions.set(list[i], xs[i])
+      for (let i = 0; i < blocks.length; i += 1) {
+        blockX.set(blocks[i].key, xs[i])
       }
     }
+
+    applyBlockPositions()
+  }
+
+  // --- Alignement vertical des filiations -----------------------------------
+  // Une carte dont un parent est affiché est placée juste sous le milieu de
+  // l'union de ses parents (ou sous le parent seul), afin que la courbe de
+  // filiation descende à la verticale. Un couple restant soudé, le conjoint
+  // suit la carte concernée. Les personnes sans parent conservent la position
+  // issue du barycentre. Les rangées sont traitées du haut vers le bas pour
+  // que chaque enfant utilise les positions définitives de ses parents.
+  const step = CARD_WIDTH + COUPLE_GAP
+
+  /** Ancre d'un bloc : union parentale visée et décalage de la carte ancrée. */
+  type BlockAnchor = {
+    /** Parents communs (clé de fratrie), `null` si plusieurs familles. */
+    key: string | null
+    /** Milieu de l'union parentale. */
+    anchorX: number
+    /** Distance entre le bord gauche du bloc et la carte ancrée. */
+    cardOffset: number
+  }
+
+  /** Groupe rigide de blocs partageant la même union parentale. */
+  type AlignmentUnit = {
+    blocks: FamilyBlock[]
+    /** Bord gauche de chaque bloc, relatif à l'ancre du groupe. */
+    offsets: number[]
+    /** Position visée de l'ancre. */
+    anchorX: number
+    /** Distance entre le bord gauche du groupe et son ancre. */
+    anchorOffset: number
+    /** Largeur totale du groupe. */
+    width: number
+    /** Ordre initial (pour départager deux ancres identiques). */
+    sortIndex: number
+  }
+
+  const blockAnchor = (block: FamilyBlock): BlockAnchor | null => {
+    const anchors: { key: string; x: number; cardOffset: number }[] = []
+
+    block.ids.forEach((id, index) => {
+      const parentIds = (parentsOf.get(id) ?? []).filter((parentId) =>
+        positions.has(parentId),
+      )
+      if (parentIds.length === 0) return
+
+      let sum = 0
+      for (const parentId of parentIds) {
+        sum += positions.get(parentId)! + CARD_WIDTH / 2
+      }
+      anchors.push({
+        key: [...parentIds].sort().join(':'),
+        x: sum / parentIds.length,
+        cardOffset: index * step + CARD_WIDTH / 2,
+      })
+    })
+    if (anchors.length === 0) return null
+
+    const sameKey = anchors.every((anchor) => anchor.key === anchors[0].key)
+    return {
+      key: sameKey ? anchors[0].key : null,
+      anchorX:
+        anchors.reduce((sum, anchor) => sum + anchor.x, 0) / anchors.length,
+      cardOffset:
+        anchors.reduce((sum, anchor) => sum + anchor.cardOffset, 0) /
+        anchors.length,
+    }
+  }
+
+  for (const generation of generations) {
+    const blocks = blocksByGeneration.get(generation)!
+    const units: AlignmentUnit[] = []
+    const groups = new Map<
+      string,
+      { anchorX: number; entries: { block: FamilyBlock; cardOffset: number }[] }
+    >()
+
+    // 1. Regroupement des blocs par fratrie (même union parentale).
+    for (const block of blocks) {
+      const anchor = blockAnchor(block)
+      if (!anchor) {
+        // Bloc sans parent : il garde la position du barycentre.
+        const width = block.width
+        units.push({
+          blocks: [block],
+          offsets: [-width / 2],
+          anchorX: blockX.get(block.key)! + width / 2,
+          anchorOffset: width / 2,
+          width,
+          sortIndex: block.sortIndex,
+        })
+        continue
+      }
+
+      if (anchor.key) {
+        const group = groups.get(anchor.key) ?? {
+          anchorX: anchor.anchorX,
+          entries: [],
+        }
+        group.entries.push({ block, cardOffset: anchor.cardOffset })
+        groups.set(anchor.key, group)
+      } else {
+        units.push({
+          blocks: [block],
+          offsets: [-anchor.cardOffset],
+          anchorX: anchor.anchorX,
+          anchorOffset: anchor.cardOffset,
+          width: block.width,
+          sortIndex: block.sortIndex,
+        })
+      }
+    }
+
+    // 2. Placement interne de chaque fratrie : cartes ancrées centrées sous
+    //    l'union parentale, blocs espacés entre eux.
+    for (const group of groups.values()) {
+      const groupBlocks = group.entries.map((entry) => entry.block)
+
+      const xs: number[] = []
+      let cursor = 0
+      for (const block of groupBlocks) {
+        xs.push(cursor)
+        cursor += block.width + BLOCK_GAP
+      }
+      // Recentre la fratrie : moyenne des cartes ancrées = ancre parentale.
+      const anchoredCenters = xs.map(
+        (x, index) => x + group.entries[index].cardOffset,
+      )
+      const shift =
+        group.anchorX -
+        anchoredCenters.reduce((sum, value) => sum + value, 0) /
+          anchoredCenters.length
+
+      const offsets = xs.map((x) => x + shift - group.anchorX)
+      const minOffset = Math.min(...offsets)
+      const maxRight = Math.max(
+        ...offsets.map((offset, index) => offset + groupBlocks[index].width),
+      )
+      units.push({
+        blocks: groupBlocks,
+        offsets,
+        anchorX: group.anchorX,
+        anchorOffset: -minOffset,
+        width: maxRight - minOffset,
+        sortIndex: Math.min(...groupBlocks.map((block) => block.sortIndex)),
+      })
+    }
+
+    // 3. Les groupes sont ordonnés et espacés le long de la rangée ; chacun
+    //    reste attiré par l'union de ses parents.
+    units.sort((a, b) => a.anchorX - b.anchorX || a.sortIndex - b.sortIndex)
+
+    const xs = units.map((unit) => unit.anchorX - unit.anchorOffset)
+    const desired = xs.slice()
+    for (let iteration = 0; iteration < ALIGNMENT_ITERATIONS; iteration += 1) {
+      for (let i = 0; i < xs.length; i += 1) {
+        xs[i] += (desired[i] - xs[i]) * 0.5
+      }
+      for (let i = 1; i < xs.length; i += 1) {
+        xs[i] = Math.max(xs[i], xs[i - 1] + units[i - 1].width + BLOCK_GAP)
+      }
+      for (let i = xs.length - 2; i >= 0; i -= 1) {
+        xs[i] = Math.min(xs[i], xs[i + 1] - units[i].width - BLOCK_GAP)
+      }
+    }
+
+    for (let i = 0; i < units.length; i += 1) {
+      const unit = units[i]
+      const anchor = xs[i] + unit.anchorOffset
+      for (let j = 0; j < unit.blocks.length; j += 1) {
+        blockX.set(unit.blocks[j].key, anchor + unit.offsets[j])
+      }
+    }
+    applyBlockPositions()
   }
 
   // Translation : la personne focalisée est centrée sur x = 0.
@@ -284,13 +704,7 @@ export function computeTreeLayout(data: ArbrePersonneData): TreeLayout {
     const second = nodeById.get(mariage.personne_2_id)
     if (!first || !second) continue
 
-    const [left, right] =
-      first.x <= second.x ? [first, second] : [second, first]
-    const lineY = left.y + CARD_HEIGHT / 2
-    const startX = left.x + CARD_WIDTH
-    const endX = right.x
-    const midX = (startX + endX) / 2
-    const midY = lineY
+    const geometry = unionGeometry(first, second, nodes)
     const dateLabel = mariage.date_mariage
       ? `Union du ${formatDateFr(mariage.date_mariage)}`
       : 'Union'
@@ -301,9 +715,11 @@ export function computeTreeLayout(data: ArbrePersonneData): TreeLayout {
 
     marriageLines.push({
       mariageId: mariage.id,
-      path: `M ${round(startX)} ${round(lineY)} L ${round(endX)} ${round(lineY)}`,
-      midX,
-      midY,
+      path: geometry.path,
+      midX: geometry.midX,
+      midY: geometry.midY,
+      childX: geometry.childX,
+      childY: geometry.childY,
       label,
     })
   }
@@ -324,8 +740,8 @@ export function computeTreeLayout(data: ArbrePersonneData): TreeLayout {
       key: `${mariage.id}:${lien.enfant_id}`,
       mariageId: mariage.id,
       path: verticalPath(
-        line.midX,
-        line.midY,
+        line.childX,
+        line.childY,
         child.x + CARD_WIDTH / 2,
         child.y,
       ),
