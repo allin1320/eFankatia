@@ -1,7 +1,6 @@
-import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+
+import { resolveSeedDbTarget, runSeedQuery } from './lib/db-target'
 
 /**
  * Seed de test : deux lignées générales sur 6 générations.
@@ -13,10 +12,13 @@ import { fileURLToPath } from 'node:url'
  *
  * Le script est idempotent : il supprime d'abord les fiches qu'il a lui-même
  * créées (identifiants UUID déterministes), puis les recrée avec leurs unions
- * et leurs liens de parenté. Les données sont écrites en local via la CLI
- * Supabase (`db query --local`), comme `scripts/seed-admin.ts`.
+ * et leurs liens de parenté. Les données sont écrites via la CLI Supabase
+ * (`db query`), sur une cible pilotée par `SUPABASE_DB_TARGET` : `local`
+ * (défaut) pour la base locale, `linked` pour le projet cloud lié, comme
+ * `scripts/seed-admin.ts`.
  *
- * Usage : `npm run seed:personne:test`
+ * Usage : `npm run seed:personne:test` (local)
+ *         `SUPABASE_DB_TARGET=linked npm run seed:personne:test` (cloud)
  */
 
 type Sexe = 'M' | 'F'
@@ -1268,26 +1270,6 @@ $efankatia_seed_personnes$;
 `.trimStart()
 }
 
-function runSeed(sql: string): void {
-  const projectRoot = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    '..',
-  )
-  const cliPath = path.join(
-    projectRoot,
-    'node_modules',
-    'supabase',
-    'dist',
-    'supabase.js',
-  )
-
-  execFileSync(process.execPath, [cliPath, 'db', 'query', '--local'], {
-    cwd: projectRoot,
-    input: sql,
-    stdio: ['pipe', 'inherit', 'inherit'],
-  })
-}
-
 function main(): void {
   const rows = buildSeedRows()
   const { personnes, mariages, parentEnfants, mariageEnfants, resume } = rows
@@ -1303,8 +1285,9 @@ function main(): void {
       `${parentEnfants.length} liens parent-enfant, ` +
       `${mariageEnfants.length} liens mariage-enfant.`,
   )
+  console.log(`   Cible : ${resolveSeedDbTarget()}`)
 
-  runSeed(buildSeedSql(rows))
+  runSeedQuery(buildSeedSql(rows))
 
   console.log('✅ Seed personnes de test terminé.')
 }

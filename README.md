@@ -61,6 +61,7 @@ npm run format            # Prettier + ESLint --fix (formatage auto)
 npm run db:reset               # db reset local + seed administrateur
 npm run seed:user:admin-create # crée / met à jour l'administrateur (ADMIN_*)
 npm run seed:personne:test     # personnes de test : 2 lignées sur 6 générations
+npm run seed:personne:test:cloud # idem, mais sur le projet Supabase cloud lié
 ```
 
 ### Test d'upload (imgbb)
@@ -140,8 +141,27 @@ npm run db:reset                  # remet la base à zéro puis recrée l'admini
 ```
 
 Le script est **idempotent** : il peut être relancé sans erreur. Un fichier SQL ne pouvant pas lire
-`.env`, le seed est exécuté par `scripts/seed-admin.ts` via la CLI Supabase (`db query --local`) ;
+`.env`, le seed est exécuté par `scripts/seed-admin.ts` via la CLI Supabase (`db query`) ;
 `[db.seed]` est donc désactivé dans `supabase/config.toml`.
+
+### Cible des seeds : local ou cloud
+
+Les deux seeds (`scripts/seed-admin.ts` et `scripts/seed-personnes-test.ts`) visent la **base
+locale** par défaut. La variable `SUPABASE_DB_TARGET` bascule vers le projet **cloud** lié
+(`npx supabase link`) :
+
+```bash
+SUPABASE_DB_TARGET=linked npm run seed:personne:test   # variante inline
+npm run seed:personne:test:cloud                        # variante script
+npm run seed:user:admin-create:cloud                    # admin sur le cloud (lit .env)
+```
+
+Valeurs acceptées : `local` (défaut) et `linked`. En cible `linked`, la CLI s'appuie sur la session
+d'authentification (`npx supabase login` ou la variable `SUPABASE_ACCESS_TOKEN`) pour interroger le
+projet cloud lié.
+
+> ⚠️ `seed:personne:test` injecte des données de test dans l'arbre (2 lignées sur 6 générations) :
+> à réserver à un projet cloud de **démonstration / staging**, pas à la production.
 
 ## Routage
 

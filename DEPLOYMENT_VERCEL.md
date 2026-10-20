@@ -114,17 +114,20 @@ pas être lancé tel quel contre le cloud. Deux méthodes :
     where email = '<admin-email>';
    ```
 
-**Méthode B — Adapter le script**
+**Méthode B — Seed via la CLI (cloud)**
 
-Modifiez la commande `db query --local` en `db query --linked` dans
-`scripts/seed-admin.ts`, puis (avec `ADMIN_EMAIL` / `ADMIN_PASSWORD` renseignés
-dans `.env`) :
+Le script cible la base locale par défaut ; la variable `SUPABASE_DB_TARGET=linked`
+le bascule sur le projet **cloud** lié (`npx supabase link`). Avec
+`ADMIN_EMAIL` / `ADMIN_PASSWORD` renseignés dans `.env` :
 
 ```bash
-npm run seed:user:admin-create
+npm run seed:user:admin-create:cloud
+# équivalent : SUPABASE_DB_TARGET=linked npm run seed:user:admin-create
 ```
 
-Le script est idempotent (création ou mise à jour du mot de passe).
+La CLI doit être authentifiée : `npx supabase login` (session locale) ou la
+variable `SUPABASE_ACCESS_TOKEN` (CI). Le script est idempotent (création ou
+mise à jour du mot de passe).
 
 ---
 
