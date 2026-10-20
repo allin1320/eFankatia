@@ -303,18 +303,25 @@ Points clés :
 Allège l'upload en excluant ce qui n'est pas utile au build :
 
 ```gitignore
-supabase
-docs
-scripts
-agent
-.opencode
-.idea
-.vscode
-dist
-.tanstack
-.env
-.env.*
+/supabase
+/docs
+/scripts
+/agent
+/.opencode
+/.idea
+/.vscode
+/dist
+/.tanstack
+/.env
+/.env.*
 ```
+
+> ⚠️ **Toutes les entrées sont ancrées sur la racine (`/nom`)**. Le fichier suit la
+> sémantique gitignore : une entrée sans `/` se matche **à tous les niveaux**.
+> `supabase` aurait aussi supprimé `src/lib/supabase/` (`client.ts`,
+> `query-keys.ts`, `server.ts`…) et le build aurait échoué avec une série
+> d'`UNRESOLVED_IMPORT` / `Module not found` — invisibles en local, où les
+> fichiers existent.
 
 ---
 
@@ -408,6 +415,7 @@ Ou poussez sur la branche connectée à Vercel (déploiement automatique).
 | La page d'accueil charge mais les routes échouent     | La fonction ne reçoit pas les URLs profondes                   | Même point : vérifier le rewrite et que `api/server.js` est bien détecté comme fonction.            |
 | Erreur 500 au déploiement / à l'exécution             | Bundling de `dist/server/server.js` ou mauvaise version Node   | Lire les **Function Logs** ; vérifier `engines.node = 22.x` et Node.js Version = 22.x (dashboard).  |
 | Build : `[invalid_function_runtime]`                  | `"runtime": "nodejs22.x"` dans `vercel.json`                   | **Supprimer** la clé `runtime` (garder `maxDuration`) : `@vercel/node` est détecté automatiquement. |
+| Build : `UNRESOLVED_IMPORT` / `Module not found`      | `.vercelignore` trop large (entrée non ancrée)                 | Ancrer les entrées sur la racine : `/supabase` et non `supabase` (cf. §4.4).                        |
 | Connexion impossible / session perdue au rechargement | Cookies `set-cookie` non relayés                               | Vérifier la gestion `getSetCookie()` dans `api/server.js`.                                          |
 | « Variables d'environnement manquantes »              | Variables absentes ou mauvais environnement                    | Ajouter les variables en **Production** _et_ **Preview**, puis redéployer.                          |
 | Erreur Supabase « Invalid API key » / RLS             | Clés locales utilisées en prod                                 | Utiliser l'URL et les clés du projet **cloud**.                                                     |

@@ -1,16 +1,21 @@
 # Dossiers inutiles au build Vercel (allègent l'upload).
-supabase
-docs
-scripts
-agent
-.opencode
-.idea
-.vscode
+#
+# ⚠️ Toutes les entrées sont ANCRÉES sur la racine (`/nom`) : une entrée sans `/`
+# se matche à TOUS les niveaux. « supabase » aurait aussi supprimé
+# `src/lib/supabase/` (client.ts, query-keys.ts, server.ts…) et cassé le build
+# avec des UNRESOLVED_IMPORT.
+/supabase
+/docs
+/scripts
+/agent
+/.opencode
+/.idea
+/.vscode
 
 # Déjà buildé par `npm run build` sur Vercel.
-dist
-.tanstack
+/dist
+/.tanstack
 
 # Secrets locaux : ne jamais envoyer sur Vercel.
-.env
-.env.*
+/.env
+/.env.*
