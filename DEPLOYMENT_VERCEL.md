@@ -54,9 +54,22 @@ Vercel
 - Une **clé API imgbb** (`https://api.imgbb.com/`).
 - La **Supabase CLI** (déjà en `devDependency`, utilisée via `npx supabase`).
 
-> La version de Node est imposée à deux endroits : `"engines": { "node": "22.x" }`
-> dans `package.json` (build) et `"runtime": "nodejs22.x"` dans `vercel.json`
-> (fonction serverless).
+> La version de Node est imposée à **un seul endroit** côté build :
+> `"engines": { "node": "22.x" }` dans `package.json`, doublé de
+> **Settings → General → Node.js Version = 22.x** dans le dashboard Vercel
+> (le runtime de la fonction suit la même version).
+>
+> ⚠️ Ne jamais écrire `functions.*.runtime` dans `vercel.json` : ce champ exige un
+> **paquet npm versionné** (`@vercel/node@5.x`, `vercel-php@0.5.2`, …).
+> `"nodejs22.x"` y est refusé au build avec
+> `Error: [invalid_function_runtime] …`. `@vercel/node` étant le runtime officiel,
+> on l'omet tout simplement : Vercel le détecte seul.
+
+> **Aucune installation locale n'est nécessaire pour le déploiement lui-même** :
+> Vercel exécute `npm install` puis `npm run build` **dans le cloud**. La Supabase
+> CLI n'intervient que pour le push des migrations (§3.2) et les seeds (§3.4 / §3.5),
+> réalisables depuis une CI (variable `SUPABASE_ACCESS_TOKEN`) — ou, pour le schéma,
+> en collant les migrations dans le **SQL Editor** du dashboard.
 
 ---
 
@@ -85,6 +98,13 @@ npx supabase db push
 `mariage_enfants`, `profiles`, `audit_logs`, les politiques **RLS**, les RPC
 (`current_role`, `admin_*`, etc.) et les triggers (`handle_new_user`, audit).
 
+> ⚠️ **`npm run db:reset` n'est pas fait pour le cloud** : il cible la base
+> **locale** (exige `supabase start` + Docker), recrée le schéma **à vide**, puis
+> rejoue les migrations. Ne jamais le forcer contre le cloud
+> (`supabase db reset --linked`) sur un projet qui contient des données :
+> **tout serait détruit**. Sur le cloud, la seule commande à utiliser est
+> `db push` — idempotent, il n'efface rien.
+
 ### 3.3 Configurer les URLs d'authentification
 
 Dans le dashboard Supabase : **Authentication → URL Configuration**.
@@ -98,8 +118,9 @@ Dans le dashboard Supabase : **Authentication → URL Configuration**.
 
 ### 3.4 Créer le compte administrateur
 
-Le script `scripts/seed-admin.ts` cible la base **locale** (`--local`) : il ne peut
-pas être lancé tel quel contre le cloud. Deux méthodes :
+Deux méthodes : la **A** se fait entièrement dans le navigateur (aucun outil
+local), la **B** exécute `scripts/seed-admin.ts` via la CLI depuis ta machine ou
+ta CI :
 
 **Méthode A — Dashboard + SQL (recommandée)**
 
@@ -128,6 +149,26 @@ npm run seed:user:admin-create:cloud
 La CLI doit être authentifiée : `npx supabase login` (session locale) ou la
 variable `SUPABASE_ACCESS_TOKEN` (CI). Le script est idempotent (création ou
 mise à jour du mot de passe).
+
+### 3.5 Données de démonstration (optionnel)
+
+Pour vérifier l'arbre, la recherche et les fiches sans saisir de données à la
+main :
+
+```bash
+npm run seed:personne:test:cloud
+```
+
+- Injecte 2 lignées sur 6 générations (**71 personnes**, 27 unions, 82 liens
+  parent-enfant) dans le projet **cloud** lié.
+- Mêmes exigences que la Méthode B : CLI authentifiée, projet lié.
+- **Idempotent** : relançable sans doublons (UUID déterministes).
+- ⚠️ À réserver à un projet de **démonstration / staging** — ne jamais l'exécuter
+  sur un projet qui porte de vraies données familiales.
+
+> La cible de tous les seeds est pilotée par `SUPABASE_DB_TARGET` (`local` par
+> défaut, `linked` pour le cloud) : `SUPABASE_DB_TARGET=linked npm run …` ou les
+> scripts `*:cloud`. Voir `README.md` § « Cible des seeds : local ou cloud ».
 
 ---
 
@@ -234,7 +275,6 @@ Points clés :
   "outputDirectory": "dist/client",
   "functions": {
     "api/server.js": {
-      "runtime": "nodejs22.x",
       "maxDuration": 30
     }
   },
@@ -248,6 +288,10 @@ Points clés :
   `dist/server` ; seul `dist/client` est servi en statique.
 - **`rewrites`** : tout ce qui n'est pas un fichier statique existant part vers la
   fonction SSR `/api/server`. Les assets `/assets/*` restent servis directement.
+- **Pas de `runtime`** : `@vercel/node` est le runtime officiel, il est détecté
+  automatiquement. Ne jamais mettre `"runtime": "nodejs22.x"` ici (voir §2) :
+  le champ attend un paquet npm `nom@version` et ferait échouer le build.
+- **`maxDuration: 30`** : limite les requêtes SSR lentes (lecture Supabase).
 - **Ordre Vercel** : fichiers statiques → fonctions → rewrites. L'application ne
   boucle donc pas et les assets ne passent pas par la fonction.
 
@@ -259,18 +303,25 @@ Points clés :
 Allège l'upload en excluant ce qui n'est pas utile au build :
 
 ```gitignore
-supabase
-docs
-scripts
-agent
-.opencode
-.idea
-.vscode
-dist
-.tanstack
-.env
-.env.*
+/supabase
+/docs
+/scripts
+/agent
+/.opencode
+/.idea
+/.vscode
+/dist
+/.tanstack
+/.env
+/.env.*
 ```
+
+> ⚠️ **Toutes les entrées sont ancrées sur la racine (`/nom`)**. Le fichier suit la
+> sémantique gitignore : une entrée sans `/` se matche **à tous les niveaux**.
+> `supabase` aurait aussi supprimé `src/lib/supabase/` (`client.ts`,
+> `query-keys.ts`, `server.ts`…) et le build aurait échoué avec une série
+> d'`UNRESOLVED_IMPORT` / `Module not found` — invisibles en local, où les
+> fichiers existent.
 
 ---
 
@@ -311,7 +362,9 @@ Dans **Project Settings → Environment Variables**, ajoutez (cochez
 - `SUPABASE_SERVICE_ROLE_KEY` et `IMGBB_APIKEY` sont **strictement serveur** :
   jamais de préfixe `VITE_`, jamais de valeur dans le dépôt.
 - `ADMIN_EMAIL` / `ADMIN_PASSWORD` ne sont **pas** nécessaires sur Vercel : ils ne
-  servent qu'au seed local. Un changement de variable exige un **redéploiement**.
+  servent qu'au seed admin, exécuté depuis ta machine ou ta CI (script
+  `seed:user:admin-create:cloud`), jamais depuis l'app. Un changement de variable
+  d'environnement exige un **redéploiement**.
 
 En CLI :
 
@@ -347,6 +400,8 @@ Ou poussez sur la branche connectée à Vercel (déploiement automatique).
 - [ ] **Déconnexion** puis reconnexion.
 - [ ] **Upload d'une photo** de personne (imgbb) : l'URL publique est renvoyée.
 - [ ] `/app/utilisateurs` (admin) : création d'un compte, changement de rôle/mot de passe.
+- [ ] (Optionnel) Données de démo (§3.5) : `/app/arbre` et `/app/recherche`
+      affichent bien les 2 lignées du seed.
 - [ ] Les variables d'environnement sont bien prises en compte (aucune erreur
       « Variables d'environnement manquantes »).
 
@@ -354,17 +409,22 @@ Ou poussez sur la branche connectée à Vercel (déploiement automatique).
 
 ## 7. Dépannage
 
-| Symptôme                                              | Cause probable                                               | Solution                                                                                  |
-| ----------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| 404 sur les routes après chargement                   | `rewrites` absent / mal formé                                | Vérifier `vercel.json` : `/(.*)` → `/api/server`.                                         |
-| La page d'accueil charge mais les routes échouent     | La fonction ne reçoit pas les URLs profondes                 | Même point : vérifier le rewrite et que `api/server.js` est bien détecté comme fonction.  |
-| Erreur 500 au déploiement / à l'exécution             | Bundling de `dist/server/server.js` ou mauvaise version Node | Lire les **Function Logs** ; vérifier `engines.node = 22.x` et `runtime = nodejs22.x`.    |
-| Connexion impossible / session perdue au rechargement | Cookies `set-cookie` non relayés                             | Vérifier la gestion `getSetCookie()` dans `api/server.js`.                                |
-| « Variables d'environnement manquantes »              | Variables absentes ou mauvais environnement                  | Ajouter les variables en **Production** _et_ **Preview**, puis redéployer.                |
-| Erreur Supabase « Invalid API key » / RLS             | Clés locales utilisées en prod                               | Utiliser l'URL et les clés du projet **cloud**.                                           |
-| Auth : redirection refusée                            | URL Vercel absente des Redirect URLs                         | Supabase → Authentication → URL Configuration.                                            |
-| Upload image échoue                                   | `IMGBB_APIKEY` absente ou invalide                           | Vérifier la variable (sans préfixe `VITE_`).                                              |
-| Build échoue sur `node`                               | Version Node trop ancienne                                   | `package.json` → `"engines": { "node": "22.x" }` (ou Project Settings → Node.js Version). |
+| Symptôme                                              | Cause probable                                                 | Solution                                                                                            |
+| ----------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 404 sur les routes après chargement                   | `rewrites` absent / mal formé                                  | Vérifier `vercel.json` : `/(.*)` → `/api/server`.                                                   |
+| La page d'accueil charge mais les routes échouent     | La fonction ne reçoit pas les URLs profondes                   | Même point : vérifier le rewrite et que `api/server.js` est bien détecté comme fonction.            |
+| Erreur 500 au déploiement / à l'exécution             | Bundling de `dist/server/server.js` ou mauvaise version Node   | Lire les **Function Logs** ; vérifier `engines.node = 22.x` et Node.js Version = 22.x (dashboard).  |
+| Build : `[invalid_function_runtime]`                  | `"runtime": "nodejs22.x"` dans `vercel.json`                   | **Supprimer** la clé `runtime` (garder `maxDuration`) : `@vercel/node` est détecté automatiquement. |
+| Build : `UNRESOLVED_IMPORT` / `Module not found`      | `.vercelignore` trop large (entrée non ancrée)                 | Ancrer les entrées sur la racine : `/supabase` et non `supabase` (cf. §4.4).                        |
+| Connexion impossible / session perdue au rechargement | Cookies `set-cookie` non relayés                               | Vérifier la gestion `getSetCookie()` dans `api/server.js`.                                          |
+| « Variables d'environnement manquantes »              | Variables absentes ou mauvais environnement                    | Ajouter les variables en **Production** _et_ **Preview**, puis redéployer.                          |
+| Erreur Supabase « Invalid API key » / RLS             | Clés locales utilisées en prod                                 | Utiliser l'URL et les clés du projet **cloud**.                                                     |
+| Auth : redirection refusée                            | URL Vercel absente des Redirect URLs                           | Supabase → Authentication → URL Configuration.                                                      |
+| Upload image échoue                                   | `IMGBB_APIKEY` absente ou invalide                             | Vérifier la variable (sans préfixe `VITE_`).                                                        |
+| Build échoue sur `node`                               | Version Node trop ancienne                                     | `package.json` → `"engines": { "node": "22.x" }` (ou Project Settings → Node.js Version).           |
+| Seed refusé : `SUPABASE_DB_TARGET invalide`           | Variable mal renseignée (valeurs attendues : `local`/`linked`) | Relancer avec `SUPABASE_DB_TARGET=linked` ou `npm run <seed>:cloud`.                                |
+| Seed en échec 401 / « Unauthorized » (cloud)          | CLI non authentifiée ou projet non lié                         | `npx supabase login`, ou export `SUPABASE_ACCESS_TOKEN` ; `npx supabase link --project-ref …`.      |
+| Données du projet cloud perdues                       | `supabase db reset --linked` lancé par erreur                  | Dashboard → **Database → Backups** (restauration) ; sur le cloud, toujours `db push`.               |
 
 ---
 
