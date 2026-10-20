@@ -90,9 +90,9 @@
 - [x] **P8.4** Ajouter un bouton « Voir l’arbre » pour afficher l’arbre généalogique.
   - [x] **P8.4.1** Bouton « Voir l’arbre » sur chaque fiche personne (arbre complet déplié).
   - [x] **P8.4.2** Accès direct depuis l’en-tête et la carte « Explorer » du dashboard (racine familiale, 3 générations).
-- [ ] **P8.5** Permettre d’**imprimer l’arbre en cours** (branches dépliées/repliées telles qu’affichées).
-  - [ ] **P8.5.1** Bouton « Imprimer » dans le canevas + feuille de style `@media print` (paysage, masquage des contrôles zoom/±).
-  - [ ] **P8.5.2** En-tête d’impression : personne focalisée, date et profondeur affichée.
+- [x] **P8.5** Permettre d’**imprimer l’arbre en cours** (branches dépliées/repliées telles qu’affichées).
+  - [x] **P8.5.1** Bouton « Imprimer » dans le canevas + feuille de style `@media print` (paysage, masquage des contrôles zoom/±).
+  - [x] **P8.5.2** En-tête d’impression : personne focalisée, date et profondeur affichée.
 
 ## Phase 9 : Tests, Sécurité et Déploiement
 

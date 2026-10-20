@@ -59,7 +59,7 @@ export function ArbreView({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="arbre-screen-only flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           {fromFiche ? (
             <Button asChild variant="ghost" size="sm" className="-ml-2">
@@ -274,7 +274,7 @@ function useArbreVisibility(
 
 function ArbreLegend() {
   return (
-    <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+    <ul className="arbre-legend flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
       <li className="flex items-center gap-2">
         <svg width="34" height="10" aria-hidden="true">
           <path

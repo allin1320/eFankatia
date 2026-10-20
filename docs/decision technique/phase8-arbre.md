@@ -73,6 +73,20 @@ Registre des choix pris pendant la Phase 8.
   - raccourcis clavier : flèches (pan), `+`/`−` (zoom), `0` (recadrage) ;
   - recadrage automatique à l'ouverture et bouton « Recadrer » ;
   - échelle bornée entre 15 % et 250 %.
+- **Impression** (P8.5) :
+  - bouton « Imprimer » (icône imprimante) dans la barre de zoom ; Ctrl+P /
+    Cmd+P est également pris en charge ;
+  - la caméra est recalculée (`computePrintCamera`) pour faire tenir **l'arbre
+    visible** — branches dépliées/repliées telles qu'affichées — sur une page
+    **A4 paysage**, indépendamment du zoom/pan en cours ; l'événement
+    `beforeprint` applique la caméra de façon synchrone (`flushSync`) et
+    `afterprint` restaure la vue écran ;
+  - `@media print` : en-tête de l'application, barre d'outils, contrôles de zoom,
+    boutons « + / − » et aide clavier masqués ; canevas figé sur le ratio de la
+    zone imprimable (`1000 / 530`) ; fond blanc et couleurs conservées
+    (`print-color-adjust: exact`) ;
+  - en-tête d'impression : nom de la personne focalisée, nombre de générations
+    ascendantes/descendantes affichées et date d'impression.
 - **États** : skeleton, erreur avec retry, personne introuvable, famille vide,
   arbre réduit à une personne (invitation à compléter la fiche).
 - **Accessibilité** : canevas focusable, aide textuelle, boutons de zoom et
@@ -99,4 +113,3 @@ Registre des choix pris pendant la Phase 8.
 - Arbre « forêt » de plusieurs lignées racines : la racine affichée par défaut
   est unique.
 - Export image et mini-carte de navigation : envisageables en P9.
-- Impression de l’arbre en cours : planifiée en P8.5 (bouton « Imprimer » + feuille de style dédiée).
