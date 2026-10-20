@@ -12,12 +12,35 @@ import { Readable } from 'node:stream'
 
 import startServer from '../dist/server/server.js'
 
+/**
+ * Reconstruit l'origine publique de la requête (protocole + hôte).
+ *
+ * Vercel termine le TLS puis transmet la requête en HTTP interne : le
+ * protocole réel est fourni par `x-forwarded-proto` (`https` en production).
+ * C'est important car TanStack Start compare l'en-tête `Origin`/`Referer` à
+ * l'origine de `request.url` (protection CSRF des server functions).
+ */
+function getRequestOrigin(req) {
+  const forwardedProto = req.headers['x-forwarded-proto']
+  const proto =
+    (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto)
+      ?.split(',')[0]
+      ?.trim() || 'http'
+
+  const forwardedHost = req.headers['x-forwarded-host']
+  const host =
+    (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost)
+      ?.split(',')[0]
+      ?.trim() ||
+    req.headers.host ||
+    'localhost'
+
+  return `${proto}://${host}`
+}
+
 /** Convertit une requête Node.js en `Request` Web standard. */
 function toWebRequest(req) {
-  const url = new URL(
-    req.url ?? '/',
-    `http://${req.headers.host ?? 'localhost'}`,
-  )
+  const url = new URL(req.url ?? '/', getRequestOrigin(req))
 
   const headers = new Headers()
   for (const [name, value] of Object.entries(req.headers)) {

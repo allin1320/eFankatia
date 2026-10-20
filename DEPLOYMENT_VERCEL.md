@@ -146,11 +146,28 @@ Trois éléments sont nécessaires (déjà présents dans ce dépôt) :
 import { Readable } from 'node:stream'
 import startServer from '../dist/server/server.js'
 
+// Vercel termine le TLS puis transmet en HTTP interne : le protocole réel
+// vient de `x-forwarded-proto` (https en production).
+function getRequestOrigin(req) {
+  const forwardedProto = req.headers['x-forwarded-proto']
+  const proto =
+    (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto)
+      ?.split(',')[0]
+      ?.trim() || 'http'
+
+  const forwardedHost = req.headers['x-forwarded-host']
+  const host =
+    (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost)
+      ?.split(',')[0]
+      ?.trim() ||
+    req.headers.host ||
+    'localhost'
+
+  return `${proto}://${host}`
+}
+
 function toWebRequest(req) {
-  const url = new URL(
-    req.url ?? '/',
-    `http://${req.headers.host ?? 'localhost'}`,
-  )
+  const url = new URL(req.url ?? '/', getRequestOrigin(req))
   const headers = new Headers()
   for (const [name, value] of Object.entries(req.headers)) {
     if (value === undefined) continue
@@ -199,6 +216,10 @@ Points clés :
   SSR produit du HTML/JSON non pré-compressé.
 - **`duplex: 'half'`** est obligatoire pour transmettre un corps en streaming
   (requêtes POST : connexion, création de personne, upload d'image…).
+- **Protocole reconstruit via `x-forwarded-proto`** : Vercel termine le TLS puis
+  transmet en HTTP interne. Utiliser `https` en prod est indispensable car
+  TanStack Start compare l'en-tête `Origin`/`Referer` à l'origine de
+  `request.url` (protection CSRF des server functions).
 
 ### 4.3 `vercel.json` — build, runtime et routage
 
