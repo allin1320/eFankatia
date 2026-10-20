@@ -14,7 +14,11 @@ import { Skeleton } from '#/components/ui/skeleton'
 import { ArbreCanvas } from './arbre-canvas'
 import { useArbrePersonne } from '#/lib/personnes/queries'
 import { computeTreeLayout } from '#/lib/personnes/tree-layout'
-import { buildTreeVisibility } from '#/lib/personnes/tree-visibility'
+import {
+  buildTreeVisibility,
+  isChildrenExpandedByDefault,
+  isParentsExpandedByDefault,
+} from '#/lib/personnes/tree-visibility'
 import { ARBRE_BASE_DEPTH } from '#/lib/personnes/tree-types'
 import type { ArbrePersonneData } from '#/lib/personnes/tree-types'
 import { formatPersonneName } from '#/lib/personnes/format'
@@ -36,8 +40,14 @@ export function ArbreView({
   const { data, isPending, isFetching, isError, error, refetch } =
     useArbrePersonne(personneId)
 
-  const { visibility, expandParents, expandChildren, reset } =
-    useArbreVisibility(data, complet)
+  const {
+    visibility,
+    canReduce,
+    toggleParents,
+    toggleChildren,
+    toggleMarriage,
+    reset,
+  } = useArbreVisibility(data, complet)
 
   const layout = useMemo(
     () => (visibility ? computeTreeLayout(visibility.data) : null),
@@ -122,10 +132,13 @@ export function ArbreView({
           <ArbreCanvas
             data={visibility.data}
             layout={layout}
-            hiddenParents={visibility.hiddenParents}
-            hiddenChildren={visibility.hiddenChildren}
-            onExpandParents={expandParents}
-            onExpandChildren={expandChildren}
+            parentControls={visibility.parentControls}
+            childControls={visibility.childControls}
+            marriageControls={visibility.marriageControls}
+            canReduce={canReduce}
+            onToggleParents={toggleParents}
+            onToggleChildren={toggleChildren}
+            onToggleMarriage={toggleMarriage}
             onReset={reset}
             fitKey={`${personneId}:${complet}`}
           />
@@ -137,18 +150,25 @@ export function ArbreView({
 }
 
 /** État de dépliage des branches et sous-arbre visible associé. */
-function useArbreVisibility(data: ArbrePersonneData | null, complet: boolean) {
-  const [revealParents, setRevealParents] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  )
-  const [revealChildren, setRevealChildren] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  )
+function useArbreVisibility(
+  data: ArbrePersonneData | null | undefined,
+  complet: boolean,
+) {
+  const [parentOverrides, setParentOverrides] = useState<
+    ReadonlyMap<string, boolean>
+  >(() => new Map())
+  const [childOverrides, setChildOverrides] = useState<
+    ReadonlyMap<string, boolean>
+  >(() => new Map())
+  const [marriageOverrides, setMarriageOverrides] = useState<
+    ReadonlyMap<string, boolean>
+  >(() => new Map())
 
   const focusId = data?.focus_id ?? null
   useEffect(() => {
-    setRevealParents(new Set())
-    setRevealChildren(new Set())
+    setParentOverrides(new Map())
+    setChildOverrides(new Map())
+    setMarriageOverrides(new Map())
   }, [focusId])
 
   const visibility = useMemo(
@@ -157,25 +177,99 @@ function useArbreVisibility(data: ArbrePersonneData | null, complet: boolean) {
         ? buildTreeVisibility(data, {
             complet,
             baseDepth: ARBRE_BASE_DEPTH,
-            revealParents,
-            revealChildren,
+            parentOverrides,
+            childOverrides,
+            marriageOverrides,
           })
         : null,
-    [data, complet, revealParents, revealChildren],
+    [data, complet, parentOverrides, childOverrides, marriageOverrides],
   )
 
-  const expandParents = useCallback((id: string) => {
-    setRevealParents((previous) => new Set(previous).add(id))
-  }, [])
-  const expandChildren = useCallback((id: string) => {
-    setRevealChildren((previous) => new Set(previous).add(id))
-  }, [])
+  const generationById = useMemo(
+    () => new Map(data?.personnes.map((p) => [p.id, p.generation]) ?? []),
+    [data],
+  )
+  const mariageById = useMemo(
+    () => new Map(data?.mariages.map((m) => [m.id, m]) ?? []),
+    [data],
+  )
+
+  const toggleParents = useCallback(
+    (id: string, expanded: boolean) => {
+      setParentOverrides((previous) => {
+        const next = new Map(previous)
+        const generation = generationById.get(id) ?? 0
+        const defaultValue = isParentsExpandedByDefault(
+          generation,
+          complet,
+          ARBRE_BASE_DEPTH,
+        )
+        if (expanded === defaultValue) next.delete(id)
+        else next.set(id, expanded)
+        return next
+      })
+    },
+    [complet, generationById],
+  )
+
+  const toggleChildren = useCallback(
+    (id: string, expanded: boolean) => {
+      setChildOverrides((previous) => {
+        const next = new Map(previous)
+        const generation = generationById.get(id) ?? 0
+        const defaultValue = isChildrenExpandedByDefault(
+          generation,
+          complet,
+          ARBRE_BASE_DEPTH,
+        )
+        if (expanded === defaultValue) next.delete(id)
+        else next.set(id, expanded)
+        return next
+      })
+    },
+    [complet, generationById],
+  )
+
+  const toggleMarriage = useCallback(
+    (id: string, expanded: boolean) => {
+      setMarriageOverrides((previous) => {
+        const next = new Map(previous)
+        const mariage = mariageById.get(id)
+        const generation = mariage
+          ? (generationById.get(mariage.personne_1_id) ?? 0)
+          : 0
+        const defaultValue = isChildrenExpandedByDefault(
+          generation,
+          complet,
+          ARBRE_BASE_DEPTH,
+        )
+        if (expanded === defaultValue) next.delete(id)
+        else next.set(id, expanded)
+        return next
+      })
+    },
+    [complet, generationById, mariageById],
+  )
+
   const reset = useCallback(() => {
-    setRevealParents(new Set())
-    setRevealChildren(new Set())
+    setParentOverrides(new Map())
+    setChildOverrides(new Map())
+    setMarriageOverrides(new Map())
   }, [])
 
-  return { visibility, expandParents, expandChildren, reset }
+  const canReduce =
+    parentOverrides.size > 0 ||
+    childOverrides.size > 0 ||
+    marriageOverrides.size > 0
+
+  return {
+    visibility,
+    canReduce,
+    toggleParents,
+    toggleChildren,
+    toggleMarriage,
+    reset,
+  }
 }
 
 function ArbreLegend() {

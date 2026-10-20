@@ -39,15 +39,22 @@ Registre des choix pris pendant la Phase 8.
 - **Cartes** : `PersonAvatar` réutilisé — miniature `urlImgThumb`, sinon
   initiale de l'appellation (puis prénom, puis nom) en majuscule. Nom, dates et
   appellation affichés ; la personne focalisée porte un anneau et une étoile.
-- **Progression par boutons « + »** (`src/lib/personnes/tree-visibility.ts`) :
+- **Progression par boutons « + » / « − »** (`src/lib/personnes/tree-visibility.ts`) :
   - la RPC renvoie l'arbre complet (borné), l'UI n'affiche par défaut que les
     générations `-3..+3` autour de la personne focalisée ;
-  - chaque personne dont les parents (ou enfants) sont encore masqués porte un
-    **bouton « + »** au-dessus (ascendants) ou en dessous (descendants) ;
-  - un clic déplie **une génération de cette branche précise**, sans recharger
-    la donnée ; le couple et le second parent sont ajoutés automatiquement ;
-  - les branches dépliées sont locales à la session ; « Replier » (icône
-    rotation) revient à l'état par défaut.
+  - les contrôles sont présents sur **toutes les intersections**, pas seulement
+    aux extrémités :
+    - au-dessus de chaque ancêtre (y compris la personne focalisée) pour
+      déplier / replier ses parents ;
+    - au milieu de chaque union (entre les deux conjoints) pour déplier /
+      replier les enfants du couple ;
+    - sous chaque parent seul pour déplier / replier ses enfants hors union ;
+  - « + » indique une branche repliée à afficher, « − » une branche affichée à
+    réduire ;
+  - un clic agit **sur cette branche uniquement**, sans recharger la donnée ;
+    le couple et le second parent sont ajoutés automatiquement ;
+  - les branches dépliées/repliées sont locales à la session ; le bouton
+    « Réduire l’arbre » (icône rotation) revient à l'état par défaut.
 - **Mise en page** (`src/lib/personnes/tree-layout.ts`) :
   - une ligne par génération (`generation * ROW_GAP`) ;
   - placement horizontal par passes de **barycentre** (conjoints, parents,
@@ -91,4 +98,5 @@ Registre des choix pris pendant la Phase 8.
   maison suffit et évite une dépendance lourde.
 - Arbre « forêt » de plusieurs lignées racines : la racine affichée par défaut
   est unique.
-- Export image / impression et mini-carte de navigation : envisageables en P9.
+- Export image et mini-carte de navigation : envisageables en P9.
+- Impression de l’arbre en cours : planifiée en P8.5 (bouton « Imprimer » + feuille de style dédiée).

@@ -17,8 +17,6 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Mot de passe requis'),
 })
 
-type LoginValues = z.infer<typeof loginSchema>
-
 function errorMessage(error: unknown): string | null {
   if (typeof error === 'string') return error
   if (error && typeof error === 'object' && 'message' in error) {
@@ -56,7 +54,7 @@ export function LoginForm() {
   const [pending, setPending] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
 
-  const form = useForm<LoginValues>({
+  const form = useForm({
     defaultValues: { email: '', password: '' },
     validators: { onSubmit: loginSchema },
     onSubmit: async ({ value }) => {

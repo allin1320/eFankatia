@@ -86,7 +86,13 @@
   - [x] **P8.2.2** Mise en page par générations, lignes d'union et courbes de filiation.
 - [x] **P8.3** Implémenter le zoom (zoom-in / zoom-out) et le déplacement fluide (pan / drag).
   - [x] **P8.3.1** Molette, boutons, pincement tactile et raccourcis clavier (+/−/0/flèches).
-  - [x] **P8.3.2** Recadrage automatique et bouton « Recentrer » ; dépliage des branches par boutons « + » directement dans l'arbre (3 générations par défaut).
+  - [x] **P8.3.2** Recadrage automatique et bouton « Recentrer » ; dépliage/repli des branches par boutons « + » / « − » sur toutes les intersections (3 générations par défaut).
+- [x] **P8.4** Ajouter un bouton « Voir l’arbre » pour afficher l’arbre généalogique.
+  - [x] **P8.4.1** Bouton « Voir l’arbre » sur chaque fiche personne (arbre complet déplié).
+  - [x] **P8.4.2** Accès direct depuis l’en-tête et la carte « Explorer » du dashboard (racine familiale, 3 générations).
+- [ ] **P8.5** Permettre d’**imprimer l’arbre en cours** (branches dépliées/repliées telles qu’affichées).
+  - [ ] **P8.5.1** Bouton « Imprimer » dans le canevas + feuille de style `@media print` (paysage, masquage des contrôles zoom/±).
+  - [ ] **P8.5.2** En-tête d’impression : personne focalisée, date et profondeur affichée.
 
 ## Phase 9 : Tests, Sécurité et Déploiement
 
