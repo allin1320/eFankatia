@@ -1,7 +1,9 @@
 # Décisions Techniques — Phase 9 (Gestion des utilisateurs)
 
 Registre des choix pris pendant la Phase 9. L'accès est réservé au
-`ROLE_ADMIN` ; toutes les mutations passent par des RPC `SECURITY DEFINER`.
+`ROLE_ADMIN` : rôles et lignées passent par des RPC `SECURITY DEFINER`, tandis
+que les comptes (création, mot de passe) passent par des server functions
+admin-only utilisant l'Admin API Supabase.
 
 ## Backend
 
@@ -35,6 +37,9 @@ Registre des choix pris pendant la Phase 9. L'accès est réservé au
   - `old_data` / `new_data` : rôle, lignée et email,
   - `user_id = auth.uid()`.
     Un update sans changement de rôle/lignée ne crée pas de bruit.
+- **Modification du mot de passe** : server function admin-only
+  `updateUtilisateurPassword` (`auth.admin.updateUserById`) via la clé service
+  role. Validation 8..72 caractères, aucune journalisation du mot de passe.
 - **Verrouillage des écritures directes (P9.5.1)** :
   - policy `profiles_update` supprimée et privilèges révoqués (`REVOKE ALL`
     puis `GRANT SELECT` à `authenticated`) ; seule la RPC admin peut modifier
@@ -65,6 +70,9 @@ Registre des choix pris pendant la Phase 9. L'accès est réservé au
   - formulaire : email, mot de passe provisoire (8..72 caractères, affiché /
     masqué), rôle et lignée si modérateur ; erreurs de validation locales et
     erreurs serveur traduites (email déjà utilisé, etc.).
+- **Modification du mot de passe** : bouton clé sur chaque ligne, dialogue avec
+  double saisie et affichage/masquage. Le changement est immédiat et
+  n'envoie aucun e-mail.
 - **Tableau** (`components/utilisateurs/`) :
   - colonnes compte (email + badge « Vous »), rôle (badge + icône), lignée
     assignée (avatar + lien vers la fiche), dates de création/modification,
@@ -99,6 +107,9 @@ Registre des choix pris pendant la Phase 9. L'accès est réservé au
     membre (lignée remise à `null`) ;
   - création d'un compte via Admin API puis application du rôle/lignée par la
     RPC admin (profil et ligne d'audit vérifiés, compte de test supprimé) ;
+  - modification du mot de passe via Admin API : ancien mot de passe accepté
+    avant, nouveau accepté après, ancien refusé ensuite (compte de test
+    supprimé) ;
   - 1 ligne d'audit par changement réel de rôle/lignée.
 - `npm run lint` et `npm run build` OK.
 - Tests manuels UI (parcours admin / non-admin, dialogues, pagination) à

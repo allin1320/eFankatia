@@ -78,6 +78,7 @@ Le formulaire comprend les informations civiles de base, suivies du choix du mod
 - **Liste des comptes** : email, rôle, personne assignée (lignée), dates de création et de modification, avec recherche, filtre par rôle et pagination.
 - **Création de compte** : email, mot de passe provisoire, rôle et lignée éventuelle. La création passe par une server function protégée (clé service role jamais exposée) puis par les mêmes RPC `admin_*` et contrôles d'audit qu'une modification.
 - **Modification du rôle** (`ROLE_USER`, `ROLE_MODERATEUR`, `ROLE_ADMIN`) avec dialogue de confirmation. Deux gardes sont appliquées en base : impossible de se rétrograder soi-même et impossible de retirer le dernier administrateur.
+- **Modification du mot de passe** : action dédiée par compte, double saisie, changement immédiat via l'Admin API Supabase (server function réservée au `ROLE_ADMIN`).
 - **Lignée d'un modérateur** : sélection de la personne de référence via la recherche existante. La lignée est automatiquement retirée lorsque le compte n'est plus `ROLE_MODERATEUR`.
 - **Sécurité et traçabilité** : aucune écriture directe sur `profiles` ; les mutations passent uniquement par des RPC `admin_*` et chaque changement de rôle/lignée est journalisé dans `audit_logs`.
 

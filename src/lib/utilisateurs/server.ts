@@ -21,8 +21,25 @@ export type CreateUtilisateurResult = {
   email: string
 }
 
+const updateUtilisateurPasswordInput = z.object({
+  userId: z.string().uuid('Utilisateur invalide.'),
+  password: z
+    .string()
+    .min(8, 'Le mot de passe doit contenir au moins 8 caractères.')
+    .max(72, 'Le mot de passe ne peut pas dépasser 72 caractères.'),
+})
+
+export type UpdateUtilisateurPasswordInput = z.infer<
+  typeof updateUtilisateurPasswordInput
+>
+
+export type UpdateUtilisateurPasswordResult = {
+  id: string
+  email: string | null
+}
+
 /** Traduit les erreurs Auth/Admin en messages compréhensibles. */
-function mapCreateUserError(message: string): string {
+function mapAuthAdminError(message: string): string {
   const normalized = message.toLowerCase()
 
   if (
@@ -42,7 +59,39 @@ function mapCreateUserError(message: string): string {
     return 'Le mot de passe ne respecte pas les règles de sécurité.'
   }
 
+  if (
+    normalized.includes('user not found') ||
+    normalized.includes('not found')
+  ) {
+    return 'Utilisateur introuvable.'
+  }
+
   return message
+}
+
+/** Vérifie que la requête provient bien d'un administrateur connecté. */
+async function requireAdminSession() {
+  const supabase = getSupabaseServerClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Authentification requise.')
+  }
+
+  const { data: role, error: roleError } = await supabase.rpc('current_role')
+
+  if (roleError) {
+    throw new Error('Impossible de vérifier vos droits pour le moment.')
+  }
+
+  if (role !== 'ROLE_ADMIN') {
+    throw new Error('Accès refusé : rôle administrateur requis.')
+  }
+
+  return { supabase, user }
 }
 
 /**
@@ -55,25 +104,7 @@ function mapCreateUserError(message: string): string {
 export const createUtilisateur = createServerFn({ method: 'POST' })
   .validator(createUtilisateurInput)
   .handler(async ({ data }): Promise<CreateUtilisateurResult> => {
-    const supabase = getSupabaseServerClient()
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      throw new Error('Authentification requise pour créer un compte.')
-    }
-
-    const { data: role, error: roleError } = await supabase.rpc('current_role')
-
-    if (roleError) {
-      throw new Error('Impossible de vérifier vos droits pour le moment.')
-    }
-
-    if (role !== 'ROLE_ADMIN') {
-      throw new Error('Accès refusé : rôle administrateur requis.')
-    }
+    const { supabase } = await requireAdminSession()
 
     if (data.role === 'ROLE_MODERATEUR' && !data.personneId) {
       throw new Error(
@@ -90,7 +121,7 @@ export const createUtilisateur = createServerFn({ method: 'POST' })
       })
 
     if (createError) {
-      throw new Error(mapCreateUserError(createError.message))
+      throw new Error(mapAuthAdminError(createError.message))
     }
 
     const userId = created.user.id
@@ -122,4 +153,35 @@ export const createUtilisateur = createServerFn({ method: 'POST' })
     }
 
     return { id: userId, email: data.email }
+  })
+
+/**
+ * Modifie le mot de passe d'un compte utilisateur.
+ *
+ * Réservé au `ROLE_ADMIN`, via l'Admin API Supabase (clé service role côté
+ * serveur). Aucun mot de passe n'est journalisé.
+ */
+export const updateUtilisateurPassword = createServerFn({ method: 'POST' })
+  .validator(updateUtilisateurPasswordInput)
+  .handler(async ({ data }): Promise<UpdateUtilisateurPasswordResult> => {
+    await requireAdminSession()
+
+    const admin = getSupabaseAdminClient()
+    const { data: target, error: targetError } =
+      await admin.auth.admin.getUserById(data.userId)
+
+    if (targetError) {
+      throw new Error('Utilisateur introuvable.')
+    }
+
+    const { error: updateError } = await admin.auth.admin.updateUserById(
+      data.userId,
+      { password: data.password },
+    )
+
+    if (updateError) {
+      throw new Error(mapAuthAdminError(updateError.message))
+    }
+
+    return { id: target.user.id, email: target.user.email ?? null }
   })

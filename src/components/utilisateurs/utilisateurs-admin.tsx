@@ -45,6 +45,7 @@ import type { AdminUtilisateur } from '#/lib/utilisateurs/types'
 import { RoleBadge } from './role-badge'
 import { UtilisateurCreateDialog } from './utilisateur-create-dialog'
 import { UtilisateurEditDialog } from './utilisateur-edit-dialog'
+import { UtilisateurPasswordDialog } from './utilisateur-password-dialog'
 
 function initialFromEmail(email: string | null): string {
   const source = email?.trim()
@@ -416,11 +417,17 @@ function UtilisateurRow({
       </TableCell>
 
       <TableCell className="pr-4 text-right">
-        <UtilisateurEditDialog
-          utilisateur={utilisateur}
-          isSelf={isSelf}
-          onSuccess={onSuccess}
-        />
+        <div className="flex justify-end gap-2">
+          <UtilisateurPasswordDialog
+            utilisateur={utilisateur}
+            onSuccess={onSuccess}
+          />
+          <UtilisateurEditDialog
+            utilisateur={utilisateur}
+            isSelf={isSelf}
+            onSuccess={onSuccess}
+          />
+        </div>
       </TableCell>
     </TableRow>
   )

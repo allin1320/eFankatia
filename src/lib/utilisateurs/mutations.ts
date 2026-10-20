@@ -3,13 +3,18 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getSupabaseBrowserClient } from '../supabase/client'
 import { utilisateurKeys } from '../supabase/query-keys'
 import type { UserRole } from '../supabase/types'
-import { createUtilisateur } from './server'
+import { createUtilisateur, updateUtilisateurPassword } from './server'
 
 export type CreateUtilisateurVariables = {
   email: string
   password: string
   role: UserRole
   personneId: string | null
+}
+
+export type UpdateUtilisateurPasswordVariables = {
+  userId: string
+  password: string
 }
 
 export type UpdateUtilisateurRoleVariables = {
@@ -36,6 +41,31 @@ export function useCreateUtilisateur() {
           password: variables.password,
           role: variables.role,
           personneId: variables.personneId,
+        },
+      })
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: utilisateurKeys.all })
+    },
+  })
+}
+
+/**
+ * Mutation de modification du mot de passe d'un compte.
+ *
+ * Aucun cache de données n'est réellement impacté (le mot de passe n'est pas
+ * exposé), mais on invalide la liste pour rester cohérent avec les autres
+ * mutations admin.
+ */
+export function useUpdateUtilisateurPassword() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (variables: UpdateUtilisateurPasswordVariables) => {
+      return updateUtilisateurPassword({
+        data: {
+          userId: variables.userId,
+          password: variables.password,
         },
       })
     },
