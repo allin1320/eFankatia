@@ -1,0 +1,354 @@
+# Déploiement de eFankatia sur Vercel
+
+Guide **bout-en-bout** : préparer Supabase (cloud), adapter le dépôt, configurer puis déployer l'application sur **Vercel**.
+
+> Cette procédure utilise l'approche **bridge manuel** (sans nouvelle dépendance) :
+> une fonction serverless `api/server.js` fait le pont entre le runtime Node.js de
+> Vercel et le handler `fetch` produit par TanStack Start.
+
+---
+
+## Sommaire
+
+1. [Vue d'ensemble](#1-vue-densemble)
+2. [Prérequis](#2-prérequis)
+3. [Étape 1 — Préparer Supabase (cloud)](#3-étape-1--préparer-supabase-cloud)
+4. [Étape 2 — Préparer le dépôt](#4-étape-2--préparer-le-dépôt)
+5. [Étape 3 — Configurer Vercel](#5-étape-3--configurer-vercel)
+6. [Étape 4 — Déployer et vérifier](#6-étape-4--déployer-et-vérifier)
+7. [Dépannage](#7-dépannage)
+8. [Références](#8-références)
+
+---
+
+## 1. Vue d'ensemble
+
+```
+Navigateur
+   │
+   ▼
+Vercel
+   ├─ Fichiers statiques  ← dist/client/  (JS, CSS, images)
+   └─ Fonction serverless ← api/server.js
+                              │  convertit req/res Node.js → Request/Response Web
+                              ▼
+                         dist/server/server.js  (SSR TanStack Start)
+                              │
+                              ├─→ Supabase cloud (PostgreSQL, Auth, RLS, RPC)
+                              └─→ API imgbb (upload des photos)
+```
+
+- **`dist/client/`** : assets compilés par `vite build`, servis directement par Vercel.
+- **`dist/server/server.js`** : serveur SSR TanStack Start, qui exporte un handler
+  `fetch(request) → Response` (Web standard).
+- **`api/server.js`** : pont Node.js ↔ Web, seule pièce propre à Vercel.
+- **Supabase** et **imgbb** restent des services externes ; Vercel ne fait que les appeler.
+
+---
+
+## 2. Prérequis
+
+- **Node.js ≥ 22.12** (exigence de TanStack Start) et **npm**.
+- Un **compte Vercel** et (de préférence) le dépôt hébergé sur GitHub/GitLab/Bitbucket.
+- Un **projet Supabase cloud** (ou la possibilité d'en créer un).
+- Une **clé API imgbb** (`https://api.imgbb.com/`).
+- La **Supabase CLI** (déjà en `devDependency`, utilisée via `npx supabase`).
+
+> La version de Node est imposée à deux endroits : `"engines": { "node": "22.x" }`
+> dans `package.json` (build) et `"runtime": "nodejs22.x"` dans `vercel.json`
+> (fonction serverless).
+
+---
+
+## 3. Étape 1 — Préparer Supabase (cloud)
+
+### 3.1 Créer / identifier le projet
+
+1. Créez un projet sur [supabase.com](https://supabase.com/dashboard).
+2. Notez son **`<project-ref>`** (visible dans l'URL du dashboard :
+   `https://supabase.com/dashboard/project/<project-ref>`).
+
+### 3.2 Lier le dépôt et pousser les migrations
+
+```bash
+# Authentification (interactive). En CI : export SUPABASE_ACCESS_TOKEN=...
+npx supabase login
+
+# Lier le dossier au projet cloud (demande le mot de passe DB)
+npx supabase link --project-ref <project-ref>
+
+# Appliquer toutes les migrations (schéma, RLS, RPC, triggers)
+npx supabase db push
+```
+
+`db push` crée les tables `personnes`, `mariages`, `parent_enfants`,
+`mariage_enfants`, `profiles`, `audit_logs`, les politiques **RLS**, les RPC
+(`current_role`, `admin_*`, etc.) et les triggers (`handle_new_user`, audit).
+
+### 3.3 Configurer les URLs d'authentification
+
+Dans le dashboard Supabase : **Authentication → URL Configuration**.
+
+- **Site URL** : `https://<votre-app>.vercel.app` (ou votre domaine personnalisé).
+- **Redirect URLs** : ajoutez la même URL, et si besoin les URLs de prévisualisation
+  Vercel (ex. `https://<projet>-*.vercel.app`).
+
+> Pour le développement local, gardez aussi `http://127.0.0.1:3003` et
+> `http://localhost:3003` dans **Redirect URLs** (valeurs de `supabase/config.toml`).
+
+### 3.4 Créer le compte administrateur
+
+Le script `scripts/seed-admin.ts` cible la base **locale** (`--local`) : il ne peut
+pas être lancé tel quel contre le cloud. Deux méthodes :
+
+**Méthode A — Dashboard + SQL (recommandée)**
+
+1. **Authentication → Users → Add user** : saisissez l'e-mail et le mot de passe,
+   cochez **Auto Confirm User**.
+   Le trigger `handle_new_user` crée automatiquement le profil avec `ROLE_USER`.
+2. Dans le **SQL Editor**, promouvez ce compte :
+
+   ```sql
+   update public.profiles
+      set role = 'ROLE_ADMIN'
+    where email = '<admin-email>';
+   ```
+
+**Méthode B — Adapter le script**
+
+Modifiez la commande `db query --local` en `db query --linked` dans
+`scripts/seed-admin.ts`, puis (avec `ADMIN_EMAIL` / `ADMIN_PASSWORD` renseignés
+dans `.env`) :
+
+```bash
+npm run seed:user:admin-create
+```
+
+Le script est idempotent (création ou mise à jour du mot de passe).
+
+---
+
+## 4. Étape 2 — Préparer le dépôt
+
+Trois éléments sont nécessaires (déjà présents dans ce dépôt) :
+
+### 4.1 `package.json` — version de Node
+
+```json
+"engines": {
+  "node": "22.x"
+}
+```
+
+### 4.2 `api/server.js` — le pont Node.js ↔ Web
+
+```js
+import { Readable } from 'node:stream'
+import startServer from '../dist/server/server.js'
+
+function toWebRequest(req) {
+  const url = new URL(
+    req.url ?? '/',
+    `http://${req.headers.host ?? 'localhost'}`,
+  )
+  const headers = new Headers()
+  for (const [name, value] of Object.entries(req.headers)) {
+    if (value === undefined) continue
+    if (Array.isArray(value))
+      for (const item of value) headers.append(name, item)
+    else headers.append(name, value)
+  }
+  const method = (req.method ?? 'GET').toUpperCase()
+  const hasBody = method !== 'GET' && method !== 'HEAD'
+  const body = hasBody ? Readable.toWeb(req) : undefined
+  return new Request(url, { method, headers, body, duplex: 'half' })
+}
+
+async function sendWebResponse(res, response) {
+  for (const [name, value] of response.headers.entries()) {
+    const lower = name.toLowerCase()
+    if (lower === 'set-cookie' || lower === 'content-encoding') continue
+    res.setHeader(name, value)
+  }
+  const setCookies = response.headers.getSetCookie?.() ?? []
+  if (setCookies.length > 0) res.setHeader('set-cookie', setCookies)
+  res.statusCode = response.status
+  res.statusMessage = response.statusText
+  if (response.body) Readable.fromWeb(response.body).pipe(res)
+  else res.end()
+}
+
+export default async function handler(req, res) {
+  try {
+    const response = await startServer.fetch(toWebRequest(req))
+    await sendWebResponse(res, response)
+  } catch (error) {
+    console.error('[eFankatia] Erreur serveur :', error)
+    res.statusCode = 500
+    res.setHeader('content-type', 'application/json; charset=utf-8')
+    res.end(JSON.stringify({ error: 'Erreur interne du serveur.' }))
+  }
+}
+```
+
+Points clés :
+
+- **`set-cookie`** est relayé séparément : c'est ce qui transporte la session
+  Supabase (cookies httpOnly). Sans cela, la connexion ne « tient » pas.
+- **`content-encoding`** est retiré : Vercel gère lui-même la compression, et le
+  SSR produit du HTML/JSON non pré-compressé.
+- **`duplex: 'half'`** est obligatoire pour transmettre un corps en streaming
+  (requêtes POST : connexion, création de personne, upload d'image…).
+
+### 4.3 `vercel.json` — build, runtime et routage
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/client",
+  "functions": {
+    "api/server.js": {
+      "runtime": "nodejs22.x",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/server" }]
+}
+```
+
+- **`framework: null`** : désactive la détection automatique (on n'utilise pas le
+  preset Nitro).
+- **`buildCommand` + `outputDirectory`** : `vite build` produit `dist/client` et
+  `dist/server` ; seul `dist/client` est servi en statique.
+- **`rewrites`** : tout ce qui n'est pas un fichier statique existant part vers la
+  fonction SSR `/api/server`. Les assets `/assets/*` restent servis directement.
+- **Ordre Vercel** : fichiers statiques → fonctions → rewrites. L'application ne
+  boucle donc pas et les assets ne passent pas par la fonction.
+
+> Vercel exécute `npm run build` **avant** de bundler `api/server.js` : le fichier
+> `dist/server/server.js` existe donc au moment de la compilation de la fonction.
+
+### 4.4 `.vercelignore` (optionnel)
+
+Allège l'upload en excluant ce qui n'est pas utile au build :
+
+```gitignore
+supabase
+docs
+scripts
+agent
+.opencode
+.idea
+.vscode
+dist
+.tanstack
+.env
+.env.*
+```
+
+---
+
+## 5. Étape 3 — Configurer Vercel
+
+### 5.1 Importer le projet
+
+**Via Git (recommandé)**
+
+1. Poussez le dépôt sur GitHub/GitLab/Bitbucket.
+2. Sur Vercel : **Add New → Project**, sélectionnez le dépôt.
+3. Vercel lit `vercel.json` ; gardez les réglages détectés puis **Deploy**.
+
+**Via la CLI**
+
+```bash
+npm i -g vercel
+vercel        # crée le projet (environnement Preview)
+vercel --prod # déploie en production
+```
+
+### 5.2 Variables d'environnement
+
+Dans **Project Settings → Environment Variables**, ajoutez (cochez
+**Production** _et_ **Preview**) :
+
+| Variable                    | Visible côté client | Valeur                                                 |
+| --------------------------- | ------------------- | ------------------------------------------------------ |
+| `VITE_SUPABASE_URL`         | ✅ (public)         | `https://<project-ref>.supabase.co`                    |
+| `VITE_SUPABASE_ANON_KEY`    | ✅ (public)         | Clé **publishable** / **anon** du projet cloud         |
+| `SUPABASE_SERVICE_ROLE_KEY` | ❌ (secret)         | Clé **service_role** (Admin API : création de comptes) |
+| `IMGBB_APIKEY`              | ❌ (secret)         | Clé API imgbb                                          |
+
+**Règles importantes**
+
+- Une variable préfixée `VITE_` est **exposée au navigateur**. N'y mettez que des
+  valeurs publiques (URL + clé anon).
+- `SUPABASE_SERVICE_ROLE_KEY` et `IMGBB_APIKEY` sont **strictement serveur** :
+  jamais de préfixe `VITE_`, jamais de valeur dans le dépôt.
+- `ADMIN_EMAIL` / `ADMIN_PASSWORD` ne sont **pas** nécessaires sur Vercel : ils ne
+  servent qu'au seed local. Un changement de variable exige un **redéploiement**.
+
+En CLI :
+
+```bash
+vercel env add VITE_SUPABASE_URL production
+vercel env add VITE_SUPABASE_ANON_KEY production
+vercel env add SUPABASE_SERVICE_ROLE_KEY production
+vercel env add IMGBB_APIKEY production
+```
+
+> Récupérez les clés dans **Supabase → Project Settings → API**. Les valeurs locales
+> (`npx supabase status`) ne fonctionnent **pas** en production.
+
+---
+
+## 6. Étape 4 — Déployer et vérifier
+
+### 6.1 Déployer
+
+```bash
+# Déploiement de production
+vercel --prod
+```
+
+Ou poussez sur la branche connectée à Vercel (déploiement automatique).
+
+### 6.2 Vérifier
+
+- [ ] La page d'accueil affiche du **contenu rendu côté serveur** (pas d'écran blanc).
+- [ ] La navigation entre routes fonctionne (pas de 404).
+- [ ] **Connexion** : redirection vers `/app`, session persistante après rechargement
+      (vérifie que les cookies Supabase passent bien par le bridge).
+- [ ] **Déconnexion** puis reconnexion.
+- [ ] **Upload d'une photo** de personne (imgbb) : l'URL publique est renvoyée.
+- [ ] `/app/utilisateurs` (admin) : création d'un compte, changement de rôle/mot de passe.
+- [ ] Les variables d'environnement sont bien prises en compte (aucune erreur
+      « Variables d'environnement manquantes »).
+
+---
+
+## 7. Dépannage
+
+| Symptôme                                              | Cause probable                                               | Solution                                                                                  |
+| ----------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| 404 sur les routes après chargement                   | `rewrites` absent / mal formé                                | Vérifier `vercel.json` : `/(.*)` → `/api/server`.                                         |
+| La page d'accueil charge mais les routes échouent     | La fonction ne reçoit pas les URLs profondes                 | Même point : vérifier le rewrite et que `api/server.js` est bien détecté comme fonction.  |
+| Erreur 500 au déploiement / à l'exécution             | Bundling de `dist/server/server.js` ou mauvaise version Node | Lire les **Function Logs** ; vérifier `engines.node = 22.x` et `runtime = nodejs22.x`.    |
+| Connexion impossible / session perdue au rechargement | Cookies `set-cookie` non relayés                             | Vérifier la gestion `getSetCookie()` dans `api/server.js`.                                |
+| « Variables d'environnement manquantes »              | Variables absentes ou mauvais environnement                  | Ajouter les variables en **Production** _et_ **Preview**, puis redéployer.                |
+| Erreur Supabase « Invalid API key » / RLS             | Clés locales utilisées en prod                               | Utiliser l'URL et les clés du projet **cloud**.                                           |
+| Auth : redirection refusée                            | URL Vercel absente des Redirect URLs                         | Supabase → Authentication → URL Configuration.                                            |
+| Upload image échoue                                   | `IMGBB_APIKEY` absente ou invalide                           | Vérifier la variable (sans préfixe `VITE_`).                                              |
+| Build échoue sur `node`                               | Version Node trop ancienne                                   | `package.json` → `"engines": { "node": "22.x" }` (ou Project Settings → Node.js Version). |
+
+---
+
+## 8. Références
+
+- TanStack Start — _Hosting_ : <https://tanstack.com/start/latest/docs/framework/react/guide/hosting>
+- TanStack Start — _Server Entry Point_ : <https://tanstack.com/start/latest/docs/framework/react/guide/server-entry-point>
+- Vercel — variables d'environnement : <https://vercel.com/docs/environment-variables>
+- Vercel — `vercel.json` : <https://vercel.com/docs/project-configuration>
+- Supabase — migrations & CLI : <https://supabase.com/docs/guides/cli>
+- Supabase — URL Configuration : <https://supabase.com/docs/guides/auth/redirect-urls>

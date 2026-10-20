@@ -1,0 +1,16 @@
+# Dossiers inutiles au build Vercel (allègent l'upload).
+supabase
+docs
+scripts
+agent
+.opencode
+.idea
+.vscode
+
+# Déjà buildé par `npm run build` sur Vercel.
+dist
+.tanstack
+
+# Secrets locaux : ne jamais envoyer sur Vercel.
+.env
+.env.*

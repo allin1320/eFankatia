@@ -18,6 +18,7 @@ export default [
     ignores: [
       'eslint.config.js',
       'prettier.config.js',
+      'api',
       'src/routeTree.gen.ts',
       'src/lib/supabase/database.types.ts',
       '.opencode',
