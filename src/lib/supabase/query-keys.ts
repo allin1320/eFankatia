@@ -1,3 +1,5 @@
+import type { UserRole } from './types'
+
 /**
  * Clés de cache TanStack Query (source unique de vérité).
  *
@@ -35,4 +37,10 @@ export const searchKeys = {
   all: ['search'] as const,
   personnes: (query: string) =>
     [...searchKeys.all, 'personnes', query] as const,
+}
+
+export const utilisateurKeys = {
+  all: ['utilisateurs'] as const,
+  liste: (query: string, role: UserRole | null, page: number) =>
+    [...utilisateurKeys.all, 'liste', { query, role, page }] as const,
 }

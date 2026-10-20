@@ -336,6 +336,36 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_list_profiles: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_role?: Database['public']['Enums']['user_role']
+        }
+        Returns: {
+          admin_count: number
+          created_at: string
+          email: string
+          id: string
+          personne_appellation: string
+          personne_id: string
+          personne_nom: string
+          personne_prenom: string
+          personne_url_img_thumb: string
+          role: Database['public']['Enums']['user_role']
+          total_count: number
+          updated_at: string
+        }[]
+      }
+      admin_update_profile_role: {
+        Args: {
+          p_personne_id?: string
+          p_role: Database['public']['Enums']['user_role']
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       check_personne_doublon: {
         Args: { p_date_naissance?: string; p_nom: string; p_prenom: string }
         Returns: {
@@ -540,14 +570,6 @@ export type Database = {
           sexe: string
           url_img_thumb: string
         }[]
-      }
-      set_user_role: {
-        Args: {
-          p_email: string
-          p_personne_id?: string
-          p_role: Database['public']['Enums']['user_role']
-        }
-        Returns: undefined
       }
     }
     Enums: {
