@@ -28,6 +28,19 @@ const FIT_PADDING = 36
 const DRAG_THRESHOLD = 4
 /** Pas de déplacement au clavier (en pixels écran). */
 const KEYBOARD_STEP = 64
+/**
+ * Zone logique d'impression : A4 paysage (297 × 210 mm) moins 10 mm de marge,
+ * diminuée de l'en-tête et de la légende imprimés. Le ratio est repris par la
+ * feuille de style `@media print`.
+ */
+export const PRINT_VIEWPORT = { width: 1000, height: 500 } as const
+/** Marge conservée autour de l'arbre sur la feuille imprimée. */
+const PRINT_PADDING = 18
+/**
+ * Échelle minimale d'impression : plus permissive que le zoom écran afin de
+ * faire tenir un grand arbre sur une seule page.
+ */
+const PRINT_MIN_SCALE = 0.02
 
 type PointerPosition = { x: number; y: number }
 
@@ -49,6 +62,30 @@ type PinchState = {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
+}
+
+/**
+ * Caméra statique utilisée à l'impression : l'arbre **visible** (branches
+ * dépliées/repliées telles quelles) est réduit pour tenir sur une page A4
+ * paysage, sans dépendre du zoom ou du déplacement en cours à l'écran.
+ */
+export function computePrintCamera(bounds: FitBounds | null): Camera {
+  if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
+    return { x: 0, y: 0, scale: 1 }
+  }
+  const scale = clamp(
+    Math.min(
+      (PRINT_VIEWPORT.width - PRINT_PADDING * 2) / bounds.width,
+      (PRINT_VIEWPORT.height - PRINT_PADDING * 2) / bounds.height,
+    ),
+    PRINT_MIN_SCALE,
+    MAX_SCALE,
+  )
+  return {
+    scale,
+    x: (PRINT_VIEWPORT.width - bounds.width * scale) / 2 - bounds.x * scale,
+    y: (PRINT_VIEWPORT.height - bounds.height * scale) / 2 - bounds.y * scale,
+  }
 }
 
 type UseTreeViewportOptions = {

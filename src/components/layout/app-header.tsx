@@ -7,7 +7,7 @@ import { UserMenu } from './user-menu'
 
 export function AppHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-[var(--header-bg)] backdrop-blur-md">
+    <header className="app-header sticky top-0 z-40 border-b border-border/60 bg-[var(--header-bg)] backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
         <Link
           to="/app"

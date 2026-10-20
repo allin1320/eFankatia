@@ -173,8 +173,17 @@ body {
   background:
     radial-gradient(1100px 620px at -8% -10%, var(--hero-a), transparent 58%),
     radial-gradient(1050px 620px at 112% -12%, var(--hero-b), transparent 62%),
-    radial-gradient(720px 380px at 50% 115%, rgba(79, 184, 178, 0.1), transparent 68%),
-    linear-gradient(180deg, color-mix(in oklab, var(--sand) 68%, white) 0%, var(--foam) 44%, var(--bg-base) 100%);
+    radial-gradient(
+      720px 380px at 50% 115%,
+      rgba(79, 184, 178, 0.1),
+      transparent 68%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--sand) 68%, white) 0%,
+      var(--foam) 44%,
+      var(--bg-base) 100%
+    );
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -188,8 +197,16 @@ body::before {
   z-index: -1;
   opacity: 0.28;
   background:
-    radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.8), transparent 34%),
-    radial-gradient(circle at 78% 26%, rgba(79, 184, 178, 0.2), transparent 42%),
+    radial-gradient(
+      circle at 20% 15%,
+      rgba(255, 255, 255, 0.8),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 78% 26%,
+      rgba(79, 184, 178, 0.2),
+      transparent 42%
+    ),
     radial-gradient(circle at 42% 82%, rgba(47, 106, 74, 0.14), transparent 36%);
 }
 
@@ -264,7 +281,11 @@ pre code {
 }
 
 .feature-card {
-  background: linear-gradient(165deg, color-mix(in oklab, var(--surface-strong) 93%, white 7%), var(--surface));
+  background: linear-gradient(
+    165deg,
+    color-mix(in oklab, var(--surface-strong) 93%, white 7%),
+    var(--surface)
+  );
   box-shadow:
     0 1px 0 var(--inset-glint) inset,
     0 18px 34px rgba(30, 90, 72, 0.1),
@@ -279,7 +300,10 @@ pre code {
 button,
 .island-shell,
 a {
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease,
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
     transform 180ms ease;
 }
 
@@ -369,5 +393,144 @@ a {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Impression de l'arbre généalogique (P8.5)
+ * L'arbre visible (branches dépliées/repliées telles qu'affichées) est réduit
+ * en JavaScript pour tenir sur une page A4 paysage ; ces règles retirent
+ * l'habillage de l'application et figent le canevas sur une feuille.
+ * ------------------------------------------------------------------------- */
+.arbre-print-header {
+  display: none;
+}
+
+.arbre-print-kicker {
+  margin: 0;
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kicker);
+}
+
+.arbre-print-title {
+  margin: 0.15rem 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--sea-ink);
+}
+
+.arbre-print-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--sea-ink-soft);
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  /* Impression toujours en thème clair, même si le mode sombre est actif. */
+  .dark {
+    --sea-ink: #173a40;
+    --sea-ink-soft: #416166;
+    --lagoon: #4fb8b2;
+    --lagoon-deep: #328f97;
+    --palm: #2f6a4a;
+    --sand: #e7f0e8;
+    --foam: #f3faf5;
+    --surface: #ffffff;
+    --surface-strong: #ffffff;
+    --line: rgba(23, 58, 64, 0.14);
+    --kicker: rgba(47, 106, 74, 0.9);
+    --background: #ffffff;
+    --foreground: #173a40;
+    --card: #ffffff;
+    --card-foreground: #173a40;
+    --muted-foreground: oklch(0.45 0.01 286);
+    --border: oklch(0.9 0.004 286);
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body::before,
+  body::after {
+    display: none !important;
+  }
+
+  .app-header,
+  .site-footer,
+  .arbre-screen-only,
+  .arbre-zoom-controls,
+  .arbre-help,
+  .arbre-branch-button {
+    display: none !important;
+  }
+
+  main {
+    margin: 0 !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .arbre-canvas {
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    break-inside: avoid;
+  }
+
+  /* Le ratio reprend celui de `PRINT_VIEWPORT` (A4 paysage, marges, en-tête et
+     légende déduits) : la caméra calculée en JS fait tenir tout l'arbre sur la
+     feuille. */
+  .arbre-canvas-viewport {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    aspect-ratio: 1000 / 500;
+    overflow: hidden !important;
+    cursor: default !important;
+    touch-action: auto !important;
+  }
+
+  .arbre-canvas a {
+    color: inherit !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .arbre-legend {
+    margin-top: 4mm;
+    font-size: 8pt;
+  }
+
+  .arbre-print-header {
+    display: block;
+    margin-bottom: 5mm;
+    break-inside: avoid;
+  }
+
+  .arbre-print-title {
+    font-size: 18pt;
+  }
+
+  .arbre-print-kicker,
+  .arbre-print-meta {
+    font-size: 9pt;
   }
 }

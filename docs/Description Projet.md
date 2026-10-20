@@ -61,7 +61,7 @@ Le formulaire comprend les informations civiles de base, suivies du choix du mod
 - **Règles d'affichage UX / UI :**
   - Chaque nœud affiche une miniature de la photo de profil (champ `urlImgThumb`).
   - Si aucune photo n'est disponible, l'application affiche un avatar stylisé contenant la **première lettre de l'appellation en majuscule**.
-  - Un bouton « + » placé sur une branche affiche la génération suivante (ascendants ou descendants) de la personne sélectionnée.
+  - Les boutons « + » / « − » sont présents sur chaque intersection : au-dessus des ancêtres, au milieu des unions (enfants du couple) et sous les parents seuls. Ils déplient ou replient la branche correspondante.
 - **Navigation :**
   - Support interactif du zoom (zoom-in / zoom-out) et du déplacement (pan/drag) pour explorer confortablement l'arbre généalogique.
 
