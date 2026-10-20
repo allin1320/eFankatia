@@ -8,3 +8,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+declare namespace NodeJS {
+  interface ProcessEnv {
+    /** Clé service role Supabase (secret serveur, jamais exposée côté client). */
+    SUPABASE_SERVICE_ROLE_KEY?: string
+  }
+}

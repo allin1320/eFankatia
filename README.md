@@ -112,19 +112,21 @@ L'auth repose sur **Supabase Auth** + **`@supabase/ssr`** : la session est stock
 
 ### Variables d'environnement
 
-| Variable                 | Description                                               | Où la trouver                                                                                                                               |
-| ------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`      | URL de l'API Supabase                                     | `npx supabase status` → **`Project URL`** (local), ou dashboard → _Project Settings → API → Project URL_ (cloud)                            |
-| `VITE_SUPABASE_ANON_KEY` | Clé publique                                              | `npx supabase status` → **`Publishable`** (anciennement `anon`) (local), ou dashboard → _Project Settings → API → publishable/anon_ (cloud) |
-| `ADMIN_EMAIL`            | E-mail du compte administrateur créé par le seed          | À choisir (ex. `admin@efankatia.local`)                                                                                                     |
-| `ADMIN_PASSWORD`         | Mot de passe du compte administrateur (8 caractères min.) | À choisir                                                                                                                                   |
+| Variable                    | Description                                               | Où la trouver                                                                                                                               |
+| --------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`         | URL de l'API Supabase                                     | `npx supabase status` → **`Project URL`** (local), ou dashboard → _Project Settings → API → Project URL_ (cloud)                            |
+| `VITE_SUPABASE_ANON_KEY`    | Clé publique                                              | `npx supabase status` → **`Publishable`** (anciennement `anon`) (local), ou dashboard → _Project Settings → API → publishable/anon_ (cloud) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clé service role (serveur uniquement)                     | `npx supabase status` → **`Secret`** (local), ou dashboard → _Project Settings → API → service_role_ (cloud)                                |
+| `ADMIN_EMAIL`               | E-mail du compte administrateur créé par le seed          | À choisir (ex. `admin@efankatia.local`)                                                                                                     |
+| `ADMIN_PASSWORD`            | Mot de passe du compte administrateur (8 caractères min.) | À choisir                                                                                                                                   |
 
 ```bash
 cp .env.example .env   # puis renseigner les variables
 ```
 
-> `ADMIN_EMAIL` et `ADMIN_PASSWORD` sont lus uniquement par le script serveur `scripts/seed-admin.ts`.
-> Ne jamais les préfixer par `VITE_` : une variable `VITE_*` est exposée au navigateur.
+> `ADMIN_EMAIL`, `ADMIN_PASSWORD` et `SUPABASE_SERVICE_ROLE_KEY` sont lus uniquement côté serveur.
+> Ne jamais les préfixer par `VITE_` : une variable `VITE_*` est exposée au navigateur. La clé service role
+> sert exclusivement à créer des comptes via l'Admin API Supabase (server function protégée par le rôle admin).
 
 > Les **mêmes** variables sont utilisées côté client (`import.meta.env`) et serveur (`process.env`). C'est une clé **publique** : ne jamais exposer la clé **`Secret`** (anciennement `SERVICE_ROLE_KEY`).
 

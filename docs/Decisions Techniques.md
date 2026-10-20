@@ -16,7 +16,8 @@ les règles transverses à respecter dans le code et les migrations.
 | P6 — Fiche et actions      | [`decision technique/phase6-personnes.md`](decision%20technique/phase6-personnes.md)               | ✅ terminée | `get_personne_fiche`, modification, suppression transactionnelle, unions, actions rapides                     |
 | P7 — Recherche             | [`decision technique/phase7-recherche.md`](decision%20technique/phase7-recherche.md)               | ✅ terminée | `search_personnes`, `pg_trgm`, `immutable_unaccent`, pagination, état d'URL                                   |
 | P8 — Arbre interactif      | [`decision technique/phase8-arbre.md`](decision%20technique/phase8-arbre.md)                       | ✅ terminée | `get_arbre_personne`, `get_personne_racine`, placement par générations, boutons « + », zoom / pan, impression |
-| P9 — Tests & déploiement   | [`toList.md`](toList.md)                                                                           | ⏳ à venir  | Validation par rôle, cas complexes, déploiement                                                               |
+| P9 — Gestion utilisateurs  | [`decision technique/phase9-utilisateurs.md`](decision%20technique/phase9-utilisateurs.md)         | ✅ terminée | Rôles, lignées, RPC `admin_*`, audit, accès réservé au `ROLE_ADMIN`                                           |
+| P10 — Tests & déploiement  | [`toList.md`](toList.md)                                                                           | ⏳ à venir  | Validation par rôle, cas complexes, déploiement                                                               |
 
 ## Règles de suppression (clés étrangères)
 

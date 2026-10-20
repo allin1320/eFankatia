@@ -1,11 +1,14 @@
 import { Link } from '@tanstack/react-router'
-import { Network, Search, TreeDeciduous } from 'lucide-react'
+import { Network, Search, TreeDeciduous, Users } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
+import { useAuth } from '#/lib/auth/auth-context'
 import { ThemeToggle } from './theme-toggle'
 import { UserMenu } from './user-menu'
 
 export function AppHeader() {
+  const { isAdmin } = useAuth()
+
   return (
     <header className="app-header sticky top-0 z-40 border-b border-border/60 bg-[var(--header-bg)] backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
@@ -49,6 +52,19 @@ export function AppHeader() {
               <span className="sr-only">Rechercher un membre</span>
             </Link>
           </Button>
+          {isAdmin ? (
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="size-11 sm:size-9"
+            >
+              <Link to="/app/utilisateurs">
+                <Users />
+                <span className="sr-only">Gestion des utilisateurs</span>
+              </Link>
+            </Button>
+          ) : null}
           <ThemeToggle />
           <UserMenu />
         </div>

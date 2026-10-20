@@ -94,8 +94,32 @@
   - [x] **P8.5.1** Bouton « Imprimer » dans le canevas + feuille de style `@media print` (paysage, masquage des contrôles zoom/±).
   - [x] **P8.5.2** En-tête d’impression : personne focalisée, date et profondeur affichée.
 
-## Phase 9 : Tests, Sécurité et Déploiement
+## Phase 9 : Gestion des utilisateurs (ROLE_ADMIN uniquement) — ✅ terminée (tests manuels UI à confirmer)
 
-- [ ] **P9.1** Valider les accès par rôle (`ROLE_ADMIN`, `ROLE_MODERATEUR`, `ROLE_USER`) et les politiques RLS.
-- [ ] **P9.2** Tester les cas complexes (familles recomposées, parents solos, divorces).
-- [ ] **P9.3** Déployer l'application sur la plateforme cible.
+- [x] **P9.1** Restreindre l’accès à la gestion des utilisateurs au seul `ROLE_ADMIN`.
+  - [x] **P9.1.1** Route protégée `/app/utilisateurs` (garde `beforeLoad` + redirection pour les autres rôles).
+  - [x] **P9.1.2** Entrée de navigation visible uniquement pour `ROLE_ADMIN`.
+- [x] **P9.2** Lister les comptes utilisateurs (email, rôle, personne assignée, dates de création/modification).
+  - [x] **P9.2.1** RPC `admin_list_profiles` (`SECURITY DEFINER` + `is_admin()`) joignant `profiles` et `auth.users`.
+  - [x] **P9.2.2** Tableau avec recherche, filtre par rôle et pagination.
+  - [x] **P9.2.3** Création d’un compte (email, mot de passe provisoire, rôle, lignée) via server function sécurisée + Admin API Supabase.
+- [x] **P9.3** Modifier le rôle d’un utilisateur (`ROLE_USER`, `ROLE_MODERATEUR`, `ROLE_ADMIN`).
+  - [x] **P9.3.1** RPC `admin_update_profile_role` + garde : impossible de retirer le dernier administrateur ou de se rétrograder soi-même.
+  - [x] **P9.3.2** Dialogue de confirmation et invalidation des caches TanStack Query.
+  - [x] **P9.3.3** Modifier / réinitialiser le mot de passe d’un compte (double saisie, Admin API Supabase via server function admin-only).
+- [x] **P9.4** Assigner la lignée d’un `ROLE_MODERATEUR` (`profiles.personne_id`).
+  - [x] **P9.4.1** Sélection de la personne via la recherche existante (`search_personnes_candidats`).
+  - [x] **P9.4.2** Désassignation automatique de la lignée lorsque le rôle n’est plus `ROLE_MODERATEUR`.
+- [x] **P9.5** Sécuriser et tracer les mutations.
+  - [x] **P9.5.1** Aucune policy d’écriture directe sur `profiles` : mutations uniquement via RPC `admin_*` admin-only.
+  - [x] **P9.5.2** Journaliser chaque changement de rôle/lignée dans `audit_logs`.
+- [x] **P9.6** Documenter et valider (`lint`, `build`, tests manuels).
+  - [x] **P9.6.1** Documentation : `docs/decision technique/phase9-utilisateurs.md`, index des décisions et description fonctionnelle à jour.
+  - [x] **P9.6.2** Validation technique : `npm run lint`, `tsc --noEmit`, `npm run build`, `supabase db lint` et vérifications SQL des RPC, gardes, policies et audit.
+  - [x] **P9.6.3** Tests manuels UI : parcours admin / non-admin, création d’un compte, changement de rôle et de lignée, modification de mot de passe, redirections.
+
+## Phase 10 : Tests, Sécurité et Déploiement
+
+- [ ] **P10.1** Valider les accès par rôle (`ROLE_ADMIN`, `ROLE_MODERATEUR`, `ROLE_USER`) et les politiques RLS.
+- [ ] **P10.2** Tester les cas complexes (familles recomposées, parents solos, divorces).
+- [ ] **P10.3** Déployer l'application sur la plateforme cible.

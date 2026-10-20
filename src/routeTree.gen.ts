@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppArbreRouteImport } from './routes/app/arbre'
 import { Route as AppRechercheRouteImport } from './routes/app/recherche'
+import { Route as AppUtilisateursRouteImport } from './routes/app/utilisateurs'
 import { Route as AppPersonnesNouvelleRouteImport } from './routes/app/personnes/nouvelle'
 import { Route as AppPersonnesPersonneIdIndexRouteImport } from './routes/app/personnes/$personneId/index'
 import { Route as AppPersonnesPersonneIdModifierRouteImport } from './routes/app/personnes/$personneId/modifier'
@@ -49,6 +50,11 @@ const AppRechercheRoute = AppRechercheRouteImport.update({
   path: '/recherche',
   getParentRoute: () => AppRoute,
 } as any)
+const AppUtilisateursRoute = AppUtilisateursRouteImport.update({
+  id: '/utilisateurs',
+  path: '/utilisateurs',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPersonnesNouvelleRoute = AppPersonnesNouvelleRouteImport.update({
   id: '/personnes/nouvelle',
   path: '/personnes/nouvelle',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/app/arbre': typeof AppArbreRoute
   '/app/recherche': typeof AppRechercheRoute
+  '/app/utilisateurs': typeof AppUtilisateursRoute
   '/app/': typeof AppIndexRoute
   '/app/personnes/nouvelle': typeof AppPersonnesNouvelleRoute
   '/app/personnes/$personneId/modifier': typeof AppPersonnesPersonneIdModifierRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/app/arbre': typeof AppArbreRoute
   '/app/recherche': typeof AppRechercheRoute
+  '/app/utilisateurs': typeof AppUtilisateursRoute
   '/app': typeof AppIndexRoute
   '/app/personnes/nouvelle': typeof AppPersonnesNouvelleRoute
   '/app/personnes/$personneId/modifier': typeof AppPersonnesPersonneIdModifierRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/app/arbre': typeof AppArbreRoute
   '/app/recherche': typeof AppRechercheRoute
+  '/app/utilisateurs': typeof AppUtilisateursRoute
   '/app/': typeof AppIndexRoute
   '/app/personnes/nouvelle': typeof AppPersonnesNouvelleRoute
   '/app/personnes/$personneId/modifier': typeof AppPersonnesPersonneIdModifierRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/arbre'
     | '/app/recherche'
+    | '/app/utilisateurs'
     | '/app/'
     | '/app/personnes/nouvelle'
     | '/app/personnes/$personneId/modifier'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/arbre'
     | '/app/recherche'
+    | '/app/utilisateurs'
     | '/app'
     | '/app/personnes/nouvelle'
     | '/app/personnes/$personneId/modifier'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/arbre'
     | '/app/recherche'
+    | '/app/utilisateurs'
     | '/app/'
     | '/app/personnes/nouvelle'
     | '/app/personnes/$personneId/modifier'
@@ -185,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRechercheRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/utilisateurs': {
+      id: '/app/utilisateurs'
+      path: '/utilisateurs'
+      fullPath: '/app/utilisateurs'
+      preLoaderRoute: typeof AppUtilisateursRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/personnes/nouvelle': {
       id: '/app/personnes/nouvelle'
       path: '/personnes/nouvelle'
@@ -212,6 +231,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppArbreRoute: typeof AppArbreRoute
   AppRechercheRoute: typeof AppRechercheRoute
+  AppUtilisateursRoute: typeof AppUtilisateursRoute
   AppIndexRoute: typeof AppIndexRoute
   AppPersonnesNouvelleRoute: typeof AppPersonnesNouvelleRoute
   AppPersonnesPersonneIdModifierRoute: typeof AppPersonnesPersonneIdModifierRoute
@@ -221,6 +241,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppArbreRoute: AppArbreRoute,
   AppRechercheRoute: AppRechercheRoute,
+  AppUtilisateursRoute: AppUtilisateursRoute,
   AppIndexRoute: AppIndexRoute,
   AppPersonnesNouvelleRoute: AppPersonnesNouvelleRoute,
   AppPersonnesPersonneIdModifierRoute: AppPersonnesPersonneIdModifierRoute,
