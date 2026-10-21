@@ -184,3 +184,24 @@ Tailwind CSS v4 avec une config CSS-first dans `src/styles.css` (pas de `tailwin
 ```bash
 pnpm dlx shadcn@latest add <component>
 ```
+
+## Licence
+
+Ce projet est distribué sous **licence personnalisée** : code source accessible et utilisation
+gratuite, avec des restrictions sur la commercialisation. Le texte complet se trouve dans
+[`LICENSE.md`](./LICENSE.md).
+
+En résumé :
+
+- ✅ **Utilisation gratuite** — usage personnel ou professionnel, sans paiement.
+- ✅ **Code source accessible** — consultation, copie, modification, fork.
+- ✅ **Redistribution gratuite** — des versions originales ou modifiées, en conservant la licence et
+  les mentions de droits d'auteur.
+- ❌ **Pas de commercialisation** — vendre le Logiciel, une version dérivée, ou facturer un accès
+  nécessite une autorisation écrite préalable du titulaire des droits.
+- ⚠️ **Aucune garantie** — le Logiciel est fourni « EN L'ÉTAT ».
+
+© 2026 **Allin RAMANAMPISOA** — <https://github.com/allin1320/eFankatia>
+
+Pour toute demande de licence commerciale ou d'autorisation particulière :
+[allin13ramanampisoa@outlook.fr](mailto:allin13ramanampisoa@outlook.fr).
