@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { CrossIcon, StarIcon } from 'lucide-react'
+import { CrossIcon, Gem, StarIcon } from 'lucide-react'
 import { cn } from 'cn'
 
 import { PersonAvatar } from '../person-avatar'
@@ -18,6 +18,7 @@ type ArbreNodeProps = {
 /** Carte d'une personne dans l'arbre : photo (ou initiale) + état civil. */
 export function ArbreNode({ personne, isFocus, x, y }: ArbreNodeProps) {
   const dates = formatDateRange(personne.date_naissance, personne.date_deces)
+  const isFemme = personne.sexe === 'F'
 
   return (
     <Link
@@ -31,10 +32,13 @@ export function ArbreNode({ personne, isFocus, x, y }: ArbreNodeProps) {
       }}
       aria-current={isFocus ? 'true' : undefined}
       className={cn(
-        'group absolute flex items-center gap-3 overflow-hidden rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-sm outline-none backdrop-blur-sm transition-[transform,border-color,box-shadow] hover:z-10 hover:-translate-y-0.5 hover:border-[var(--lagoon-deep)]/60 focus-visible:ring-[3px] focus-visible:ring-[var(--lagoon)]/50',
-        isFocus
-          ? 'border-[var(--lagoon-deep)] ring-2 ring-[var(--lagoon)]/45'
-          : 'border-[var(--line)]',
+        'group absolute flex items-center gap-3 overflow-hidden rounded-2xl border bg-[var(--surface-strong)] p-3 shadow-sm outline-none backdrop-blur-sm transition-[transform,border-color,box-shadow] hover:z-10 hover:-translate-y-0.5 focus-visible:ring-[3px] focus-visible:ring-[var(--lagoon)]/50',
+        isFemme
+          ? 'border-[#ea9df2] hover:border-[#ea9df2]'
+          : isFocus
+            ? 'border-[var(--lagoon-deep)] hover:border-[var(--lagoon-deep)]/60'
+            : 'border-[var(--line)] hover:border-[var(--lagoon-deep)]/60',
+        isFocus && 'ring-2 ring-[var(--lagoon)]/45',
       )}
     >
       <PersonAvatar
@@ -76,12 +80,23 @@ export function ArbreNode({ personne, isFocus, x, y }: ArbreNodeProps) {
 
       {personne.date_deces ? (
         <span
-          className="absolute right-1.5 bottom-1.5 flex items-center justify-center text-muted-foreground/80"
+          className="absolute right-1.5 top-1.5 flex size-4 items-center justify-center rounded-full bg-[var(--surface-strong)] text-muted-foreground"
           role="img"
           aria-label="Décédé(e)"
           title="Décédé(e)"
         >
           <CrossIcon className="size-3" aria-hidden="true" strokeWidth={2.5} />
+        </span>
+      ) : null}
+
+      {personne.est_lignee_generale ? (
+        <span
+          className="absolute right-1.5 bottom-1.5 flex size-4 items-center justify-center rounded-full bg-[var(--surface-strong)] text-[var(--lagoon-deep)]"
+          role="img"
+          aria-label="Lignée générale"
+          title="Lignée générale"
+        >
+          <Gem className="size-3" aria-hidden="true" />
         </span>
       ) : null}
     </Link>
