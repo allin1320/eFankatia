@@ -4,6 +4,7 @@ import {
   Camera,
   Github,
   History,
+  ImageOff,
   LogIn,
   Network,
   Search,
@@ -13,6 +14,7 @@ import {
   UserRound,
   Users,
 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 import { ThemeToggle } from '#/components/layout/theme-toggle'
 import { Button } from '#/components/ui/button'
@@ -655,14 +657,48 @@ function ScreenshotFrame({
   priority?: boolean
   className?: string
 }) {
+  const imageRef = useRef<HTMLImageElement>(null)
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(
+    'loading',
+  )
+
+  // Si l'image est déjà en cache avant l'hydratation, `onLoad` ne sera pas
+  // rejoué : on synchronise l'état depuis le DOM au montage.
+  useEffect(() => {
+    const image = imageRef.current
+    if (!image?.complete) return
+    setStatus(image.naturalWidth > 0 ? 'loaded' : 'error')
+  }, [])
+
   return (
     <figure
+      aria-busy={status === 'loading'}
       className={cn(
-        'group overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-[0_28px_70px_-28px_rgba(23,58,64,0.55)]',
+        'group relative overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] shadow-[0_28px_70px_-28px_rgba(23,58,64,0.55)]',
         className,
       )}
     >
+      {status !== 'loaded' && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 z-10 flex items-center justify-center"
+        >
+          <div className="img-skeleton absolute inset-0" />
+          {status === 'error' ? (
+            <div className="relative flex flex-col items-center gap-2 px-4 text-center text-muted-foreground">
+              <ImageOff className="size-6" aria-hidden="true" />
+              <span className="text-xs font-medium">Aperçu indisponible</span>
+            </div>
+          ) : (
+            <span className="relative flex size-10 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] text-[var(--lagoon-deep)] shadow-sm">
+              <TreeDeciduous className="size-5" aria-hidden="true" />
+            </span>
+          )}
+        </div>
+      )}
+
       <img
+        ref={imageRef}
         src={src}
         alt={alt}
         width={1920}
@@ -670,7 +706,12 @@ function ScreenshotFrame({
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
         fetchPriority={priority ? 'high' : 'auto'}
-        className="h-auto w-full transition-transform duration-700 ease-out group-hover:scale-[1.015]"
+        onLoad={() => setStatus('loaded')}
+        onError={() => setStatus('error')}
+        className={cn(
+          'h-auto w-full transition-[transform,opacity] duration-700 ease-out group-hover:scale-[1.015]',
+          status === 'loaded' ? 'opacity-100' : 'opacity-0',
+        )}
       />
     </figure>
   )

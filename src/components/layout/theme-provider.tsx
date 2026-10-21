@@ -27,14 +27,14 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = theme
 }
 
+// Thème clair par défaut : on ne suit pas `prefers-color-scheme` pour éviter
+// qu'un visiteur dont l'OS est en sombre arrive directement en mode sombre.
+// Seul un choix explicite de l'utilisateur (localStorage) est respecté.
 function readInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'light'
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored === 'dark' || stored === 'light') return stored
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light'
+    return stored === 'dark' ? 'dark' : 'light'
   } catch {
     return 'light'
   }
