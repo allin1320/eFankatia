@@ -20,7 +20,9 @@ import { getSession } from '../lib/auth/session'
 
 import appCss from '../styles.css?url'
 
-const themeInitScript = `(function(){try{var t=localStorage.getItem('efankatia-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`
+// Thème clair par défaut, sans tenir compte de `prefers-color-scheme` : le mode
+// sombre n'est appliqué que si l'utilisateur l'a explicitement choisi.
+const themeInitScript = `(function(){try{var d=document.documentElement;if(localStorage.getItem('efankatia-theme')==='dark'){d.classList.add('dark');d.style.colorScheme='dark'}}catch(e){}})()`
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async () => {
