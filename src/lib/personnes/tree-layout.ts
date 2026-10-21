@@ -18,7 +18,7 @@
  */
 
 import { formatDateFr } from './format'
-import type { ArbrePersonneData } from './tree-types'
+import type { ArbrePersonne, ArbrePersonneData } from './tree-types'
 
 /** Dimensions d'une carte personne. */
 export const CARD_WIDTH = 176
@@ -99,8 +99,46 @@ const EMPTY_LAYOUT: TreeLayout = {
   bounds: { x: 0, y: 0, width: 1, height: 1 },
 }
 
-function nameSortKey(p: { nom: string | null; prenom: string | null }): string {
-  return `${p.nom ?? ''} ${p.prenom ?? ''}`.toLocaleLowerCase('fr')
+/**
+ * Comparateur de naissance : l'aîné(e) (date la plus ancienne) passe en
+ * premier ; les dates inconnues (`null`) sont repoussées à la fin.
+ */
+function compareBirth(
+  a: { date: string | null },
+  b: { date: string | null },
+): number {
+  const da = a.date
+  const db = b.date
+  if (da && db) return da < db ? -1 : da > db ? 1 : 0
+  if (da) return -1
+  if (db) return 1
+  return 0
+}
+
+/**
+ * Repère d'ordre d'une personne dans sa génération.
+ *
+ * La lignée générale (personne née dans la famille) est ordonnée par sa propre
+ * date de naissance. Un conjoint par alliance hérite de la date de son conjoint
+ * de lignée, afin de rester accolé à lui et de ne jamais être trié par son
+ * propre âge (ex. un mari de 60 ans ne passe pas devant la lignée de sa femme).
+ */
+function lineageAnchor(
+  id: string,
+  personById: Map<string, ArbrePersonne>,
+  spouses: Map<string, string[]>,
+): { date: string | null; isLignee: boolean } {
+  const personne = personById.get(id)!
+  if (personne.est_lignee_generale) {
+    return { date: personne.date_naissance, isLignee: true }
+  }
+  for (const spouseId of spouses.get(id) ?? []) {
+    const spouse = personById.get(spouseId)
+    if (spouse?.est_lignee_generale) {
+      return { date: spouse.date_naissance, isLignee: false }
+    }
+  }
+  return { date: personne.date_naissance, isLignee: false }
 }
 
 function pushTo<TKey, TValue>(
@@ -352,15 +390,19 @@ export function computeTreeLayout(data: ArbrePersonneData): TreeLayout {
   }
   const generations = [...byGeneration.keys()].sort((a, b) => a - b)
 
-  // Ordre initial : alphabétique dans chaque génération.
+  // Ordre initial : la lignée générale (personnes nées dans la famille) est
+  // ordonnée par date de naissance croissante (l'aîné d'abord) ; un conjoint
+  // par alliance hérite de la date de son conjoint de lignée et lui succède,
+  // sans jamais être trié par son propre âge. Les dates inconnues passent en fin.
   const order = new Map<number, string[]>()
   for (const generation of generations) {
     const list = [...(byGeneration.get(generation) ?? [])]
     list.sort((a, b) => {
-      const pa = personById.get(a)!
-      const pb = personById.get(b)!
+      const anchorA = lineageAnchor(a, personById, spouses)
+      const anchorB = lineageAnchor(b, personById, spouses)
       return (
-        nameSortKey(pa).localeCompare(nameSortKey(pb), 'fr') ||
+        compareBirth(anchorA, anchorB) ||
+        Number(anchorB.isLignee) - Number(anchorA.isLignee) ||
         sourceOrder.get(a)! - sourceOrder.get(b)!
       )
     })
