@@ -278,6 +278,12 @@ Points clés :
       "maxDuration": 30
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/keepalive",
+      "schedule": "0 3 * * *"
+    }
+  ],
   "rewrites": [{ "source": "/(.*)", "destination": "/api/server" }]
 }
 ```
@@ -292,6 +298,9 @@ Points clés :
   automatiquement. Ne jamais mettre `"runtime": "nodejs22.x"` ici (voir §2) :
   le champ attend un paquet npm `nom@version` et ferait échouer le build.
 - **`maxDuration: 30`** : limite les requêtes SSR lentes (lecture Supabase).
+- **`crons`** : un seul job, `0 3 * * *` (03:00 UTC). Il appelle
+  `/api/cron/keepalive`, une **fonction réelle** (`api/cron/keepalive.js`) donc
+  matchée avant le rewrite catch-all. Voir §6.3.
 - **Ordre Vercel** : fichiers statiques → fonctions → rewrites. L'application ne
   boucle donc pas et les assets ne passent pas par la fonction.
 
@@ -348,12 +357,13 @@ vercel --prod # déploie en production
 Dans **Project Settings → Environment Variables**, ajoutez (cochez
 **Production** _et_ **Preview**) :
 
-| Variable                    | Visible côté client | Valeur                                                 |
-| --------------------------- | ------------------- | ------------------------------------------------------ |
-| `VITE_SUPABASE_URL`         | ✅ (public)         | `https://<project-ref>.supabase.co`                    |
-| `VITE_SUPABASE_ANON_KEY`    | ✅ (public)         | Clé **publishable** / **anon** du projet cloud         |
-| `SUPABASE_SERVICE_ROLE_KEY` | ❌ (secret)         | Clé **service_role** (Admin API : création de comptes) |
-| `IMGBB_APIKEY`              | ❌ (secret)         | Clé API imgbb                                          |
+| Variable                    | Visible côté client | Valeur                                                  |
+| --------------------------- | ------------------- | ------------------------------------------------------- |
+| `VITE_SUPABASE_URL`         | ✅ (public)         | `https://<project-ref>.supabase.co`                     |
+| `VITE_SUPABASE_ANON_KEY`    | ✅ (public)         | Clé **publishable** / **anon** du projet cloud          |
+| `SUPABASE_SERVICE_ROLE_KEY` | ❌ (secret)         | Clé **service_role** (Admin API : création de comptes)  |
+| `IMGBB_APIKEY`              | ❌ (secret)         | Clé API imgbb                                           |
+| `CRON_SECRET`               | ❌ (secret)         | Secret du keep-alive (`openssl rand -hex 32`), cf. §6.3 |
 
 **Règles importantes**
 
@@ -373,6 +383,7 @@ vercel env add VITE_SUPABASE_URL production
 vercel env add VITE_SUPABASE_ANON_KEY production
 vercel env add SUPABASE_SERVICE_ROLE_KEY production
 vercel env add IMGBB_APIKEY production
+vercel env add CRON_SECRET production
 ```
 
 > Récupérez les clés dans **Supabase → Project Settings → API**. Les valeurs locales
@@ -404,27 +415,71 @@ Ou poussez sur la branche connectée à Vercel (déploiement automatique).
       affichent bien les 2 lignées du seed.
 - [ ] Les variables d'environnement sont bien prises en compte (aucune erreur
       « Variables d'environnement manquantes »).
+- [ ] Le keep-alive répond bien (§6.3).
+
+### 6.3 Keep-alive Supabase (anti-pause)
+
+Un projet Supabase **Free** est mis **en pause** après environ 7 jours de « faible
+activité » (base, Auth et Storage deviennent alors inaccessibles : l'application
+s'affiche mais la connexion et les données échouent). Quelques requêtes base par
+jour suffisent à l'éviter.
+
+`api/cron/keepalive.js` exécute une lecture seule (`count` sur `personnes`, sans
+rapatrier de lignes) pour générer cette activité. Deux déclencheurs :
+
+| Déclencheur                     | Fréquence                         | Rôle                                    |
+| ------------------------------- | --------------------------------- | --------------------------------------- |
+| Cron Vercel (`vercel.json`)     | 1×/jour, entre 03:00 et 03:59 UTC | Filet de sécurité natif                 |
+| Cron externe (ex. cron-job.org) | 1×/6 h                            | Vraie protection + alerte mail si échec |
+
+**Pourquoi deux ?** Sur le plan Hobby, Vercel n'autorise **qu'une exécution par
+jour** (une expression plus fréquente fait échouer le déploiement) et ne garantit
+pas l'heure exacte (±59 min). Le cron externe compense, et son alerte mail sert de
+moniteur : une réponse `503` signifie que Supabase est en pause ou injoignable.
+
+Test manuel (le secret est obligatoire) :
+
+```bash
+# Sans en-tête → 401
+curl -i https://<votre-app>.vercel.app/api/cron/keepalive
+
+# Avec le secret → 200 {"ok":true,"rows":N,...}
+curl -i -H "Authorization: Bearer $CRON_SECRET" \
+  https://<votre-app>.vercel.app/api/cron/keepalive
+```
+
+Côté Vercel : **Project → Cron Jobs** liste le job et permet un déclenchement
+manuel. Vercel envoie automatiquement `Authorization: Bearer $CRON_SECRET` ; le
+cron externe doit envoyer le même en-tête personnalisé.
+
+> ⚠️ Limites : le keep-alive **empêche** la pause, il ne **réveille pas** un projet
+> déjà en pause (dashboard → _Resume project_). Il ne protège pas non plus du quota
+> de 500 Mo (base en lecture seule au-delà) ni de la règle « usage non commercial »
+> de Vercel Hobby. Seul Supabase Pro garantit l'absence de pause.
 
 ---
 
 ## 7. Dépannage
 
-| Symptôme                                              | Cause probable                                                 | Solution                                                                                            |
-| ----------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 404 sur les routes après chargement                   | `rewrites` absent / mal formé                                  | Vérifier `vercel.json` : `/(.*)` → `/api/server`.                                                   |
-| La page d'accueil charge mais les routes échouent     | La fonction ne reçoit pas les URLs profondes                   | Même point : vérifier le rewrite et que `api/server.js` est bien détecté comme fonction.            |
-| Erreur 500 au déploiement / à l'exécution             | Bundling de `dist/server/server.js` ou mauvaise version Node   | Lire les **Function Logs** ; vérifier `engines.node = 22.x` et Node.js Version = 22.x (dashboard).  |
-| Build : `[invalid_function_runtime]`                  | `"runtime": "nodejs22.x"` dans `vercel.json`                   | **Supprimer** la clé `runtime` (garder `maxDuration`) : `@vercel/node` est détecté automatiquement. |
-| Build : `UNRESOLVED_IMPORT` / `Module not found`      | `.vercelignore` trop large (entrée non ancrée)                 | Ancrer les entrées sur la racine : `/supabase` et non `supabase` (cf. §4.4).                        |
-| Connexion impossible / session perdue au rechargement | Cookies `set-cookie` non relayés                               | Vérifier la gestion `getSetCookie()` dans `api/server.js`.                                          |
-| « Variables d'environnement manquantes »              | Variables absentes ou mauvais environnement                    | Ajouter les variables en **Production** _et_ **Preview**, puis redéployer.                          |
-| Erreur Supabase « Invalid API key » / RLS             | Clés locales utilisées en prod                                 | Utiliser l'URL et les clés du projet **cloud**.                                                     |
-| Auth : redirection refusée                            | URL Vercel absente des Redirect URLs                           | Supabase → Authentication → URL Configuration.                                                      |
-| Upload image échoue                                   | `IMGBB_APIKEY` absente ou invalide                             | Vérifier la variable (sans préfixe `VITE_`).                                                        |
-| Build échoue sur `node`                               | Version Node trop ancienne                                     | `package.json` → `"engines": { "node": "22.x" }` (ou Project Settings → Node.js Version).           |
-| Seed refusé : `SUPABASE_DB_TARGET invalide`           | Variable mal renseignée (valeurs attendues : `local`/`linked`) | Relancer avec `SUPABASE_DB_TARGET=linked` ou `npm run <seed>:cloud`.                                |
-| Seed en échec 401 / « Unauthorized » (cloud)          | CLI non authentifiée ou projet non lié                         | `npx supabase login`, ou export `SUPABASE_ACCESS_TOKEN` ; `npx supabase link --project-ref …`.      |
-| Données du projet cloud perdues                       | `supabase db reset --linked` lancé par erreur                  | Dashboard → **Database → Backups** (restauration) ; sur le cloud, toujours `db push`.               |
+| Symptôme                                                  | Cause probable                                                 | Solution                                                                                                |
+| --------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 404 sur les routes après chargement                       | `rewrites` absent / mal formé                                  | Vérifier `vercel.json` : `/(.*)` → `/api/server`.                                                       |
+| La page d'accueil charge mais les routes échouent         | La fonction ne reçoit pas les URLs profondes                   | Même point : vérifier le rewrite et que `api/server.js` est bien détecté comme fonction.                |
+| Erreur 500 au déploiement / à l'exécution                 | Bundling de `dist/server/server.js` ou mauvaise version Node   | Lire les **Function Logs** ; vérifier `engines.node = 22.x` et Node.js Version = 22.x (dashboard).      |
+| Build : `[invalid_function_runtime]`                      | `"runtime": "nodejs22.x"` dans `vercel.json`                   | **Supprimer** la clé `runtime` (garder `maxDuration`) : `@vercel/node` est détecté automatiquement.     |
+| Build : `UNRESOLVED_IMPORT` / `Module not found`          | `.vercelignore` trop large (entrée non ancrée)                 | Ancrer les entrées sur la racine : `/supabase` et non `supabase` (cf. §4.4).                            |
+| Connexion impossible / session perdue au rechargement     | Cookies `set-cookie` non relayés                               | Vérifier la gestion `getSetCookie()` dans `api/server.js`.                                              |
+| « Variables d'environnement manquantes »                  | Variables absentes ou mauvais environnement                    | Ajouter les variables en **Production** _et_ **Preview**, puis redéployer.                              |
+| Erreur Supabase « Invalid API key » / RLS                 | Clés locales utilisées en prod                                 | Utiliser l'URL et les clés du projet **cloud**.                                                         |
+| Auth : redirection refusée                                | URL Vercel absente des Redirect URLs                           | Supabase → Authentication → URL Configuration.                                                          |
+| Upload image échoue                                       | `IMGBB_APIKEY` absente ou invalide                             | Vérifier la variable (sans préfixe `VITE_`).                                                            |
+| `/api/cron/keepalive` renvoie 401                         | `CRON_SECRET` absent/incorrect côté appelant                   | Même valeur dans Vercel (Production) et dans le cron externe ; redéployer après ajout.                  |
+| `/api/cron/keepalive` renvoie 503                         | Projet Supabase en pause ou clés invalides                     | Dashboard Supabase → _Resume project_, puis vérifier `VITE_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`. |
+| Build : « Hobby accounts are limited to daily cron jobs » | `schedule` plus fréquent qu'une fois par jour                  | Garder `0 3 * * *` et laisser le cron externe assurer la fréquence (§6.3).                              |
+| Build échoue sur `node`                                   | Version Node trop ancienne                                     | `package.json` → `"engines": { "node": "22.x" }` (ou Project Settings → Node.js Version).               |
+| Seed refusé : `SUPABASE_DB_TARGET invalide`               | Variable mal renseignée (valeurs attendues : `local`/`linked`) | Relancer avec `SUPABASE_DB_TARGET=linked` ou `npm run <seed>:cloud`.                                    |
+| Seed en échec 401 / « Unauthorized » (cloud)              | CLI non authentifiée ou projet non lié                         | `npx supabase login`, ou export `SUPABASE_ACCESS_TOKEN` ; `npx supabase link --project-ref …`.          |
+| Données du projet cloud perdues                           | `supabase db reset --linked` lancé par erreur                  | Dashboard → **Database → Backups** (restauration) ; sur le cloud, toujours `db push`.                   |
 
 ---
 
@@ -436,3 +491,5 @@ Ou poussez sur la branche connectée à Vercel (déploiement automatique).
 - Vercel — `vercel.json` : <https://vercel.com/docs/project-configuration>
 - Supabase — migrations & CLI : <https://supabase.com/docs/guides/cli>
 - Supabase — URL Configuration : <https://supabase.com/docs/guides/auth/redirect-urls>
+- Supabase — mise en pause des projets Free : <https://supabase.com/docs/guides/platform/free-project-pausing>
+- Vercel — Cron Jobs (limites par plan) : <https://vercel.com/docs/cron-jobs/usage-and-pricing>
